@@ -9,6 +9,9 @@ import requests
 import anthropic
 
 
+HEADERS = {"User-Agent": "FADE-NewsBot/1.0 (github.com/lewallen4/fade)"}
+
+
 def fetch_hn_ai_stories():
     since = int((datetime.datetime.utcnow() - datetime.timedelta(hours=36)).timestamp())
     url = (
@@ -16,7 +19,26 @@ def fetch_hn_ai_stories():
         f"?query=AI+agents+agentic+LLM&tags=story"
         f"&numericFilters=created_at_i>{since}&hitsPerPage=25"
     )
-    resp = requests.get(url, timeout=15)
+    try:
+        resp = requests.get(url, timeout=15, headers=HEADERS)
+        resp.raise_for_status()
+        hits = resp.json().get("hits", [])
+        stories = [
+            {"title": h["title"], "url": h.get("url", ""), "points": h.get("points", 0)}
+            for h in hits
+            if h.get("url")
+        ]
+        if stories:
+            return stories
+    except Exception as e:
+        print(f"HN fetch failed ({e}), trying fallback...")
+
+    # Fallback: broader HN search without date filter
+    resp = requests.get(
+        "https://hn.algolia.com/api/v1/search?query=agentic+AI+agents&tags=story&hitsPerPage=25",
+        timeout=15,
+        headers=HEADERS,
+    )
     resp.raise_for_status()
     hits = resp.json().get("hits", [])
     return [
