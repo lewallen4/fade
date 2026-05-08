@@ -73,6 +73,10 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
         body = await request.body()
         if len(body) > self.MAX_BODY:
             return JSONResponse({"detail": "Payload too large."}, status_code=413)
+        # Re-inject body so downstream handlers can read it
+        async def receive():
+            return {"type": "http.request", "body": body, "more_body": False}
+        request._receive = receive
         return await call_next(request)
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
