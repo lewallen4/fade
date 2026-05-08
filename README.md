@@ -2,6 +2,8 @@
 
 > *"The full read's a dollar. You want it, it's waiting."*
 
+[Fade](https://web-production-ce13f.up.railway.app/)
+
 Fade is an AI agent auditor. People bring their system prompts and agent configurations. Fade tells them what's broken, what's working, and how to fix it. In character. For money.
 
 Built to be discovered and called by agents as much as humans.
