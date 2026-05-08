@@ -896,3 +896,232 @@
 </script>
 </body>
 </html>
+<!-- DOGE PAYMENT OVERLAY — injected -->
+<style>
+  #dogeOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(8,11,15,0.96);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  #dogeOverlay.visible { display: flex; }
+  .doge-modal {
+    border: 1px solid var(--amber-dim);
+    background: var(--bg2);
+    padding: 36px;
+    max-width: 500px;
+    width: 90%;
+    font-family: var(--mono);
+  }
+  .doge-title {
+    font-family: var(--sans);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--amber);
+    margin-bottom: 20px;
+    letter-spacing: 0.1em;
+  }
+  .doge-amount {
+    font-size: 28px;
+    color: var(--text-bright);
+    margin: 16px 0 4px;
+    letter-spacing: 0.05em;
+  }
+  .doge-usd {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+  .doge-address {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    font-size: 11px;
+    color: var(--green-bright);
+    word-break: break-all;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .doge-address:hover { border-color: var(--green-bright); }
+  .doge-note {
+    font-size: 11px;
+    color: var(--amber);
+    margin-bottom: 20px;
+    line-height: 1.7;
+  }
+  .doge-status {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    min-height: 20px;
+  }
+  .doge-status.confirmed { color: var(--green-bright); }
+  .doge-status.expired { color: var(--red); }
+  .doge-cancel {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 8px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+  }
+  .doge-cancel:hover { border-color: var(--text-dim); color: var(--text); }
+  .copy-hint {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+  .doge-timer {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+</style>
+
+<div id="dogeOverlay">
+  <div class="doge-modal">
+    <div class="doge-title">◆ SEND DOGE TO FADE</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px;line-height:1.8;">
+      Send the <em style="color:var(--amber)">exact amount</em> below to the address. The unique amount identifies your payment on-chain. Do not round it.
+    </div>
+    <div class="doge-amount" id="dogeAmount">— DOGE</div>
+    <div class="doge-usd" id="dogeUsd">≈ $— USD</div>
+    <div class="doge-address" id="dogeAddress" onclick="copyAddress()" title="Click to copy">
+      DMJ3AWFE4trzRwjwqyCUpMcrE6t1b2mh6h
+    </div>
+    <div class="copy-hint" id="copyHint">↑ click address to copy</div>
+    <div class="doge-note" id="dogeNote"></div>
+    <div class="doge-timer" id="dogeTimer"></div>
+    <div class="doge-status" id="dogeStatus">// Watching for your transaction...</div>
+    <button class="doge-cancel" onclick="cancelDoge()">CANCEL</button>
+  </div>
+</div>
+
+<script>
+// Override the existing runPaidAudit to use DOGE flow
+let dogeSession = null;
+let dogeContent = null;
+let dogeTier = null;
+let pollInterval = null;
+let dogeExpiry = null;
+
+async function runPaidAudit() {
+  if (selectedTier === 'free') { runFreeAudit(); return; }
+
+  const content = document.getElementById('inputContent').value.trim();
+  if (!content) { alert("Hand me something to read."); return; }
+
+  setLoading(true);
+  try {
+    const res = await fetch('/checkout', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ tier: selectedTier, content })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      showOutput(err.detail || 'Checkout failed.', 'ERROR');
+      setLoading(false);
+      return;
+    }
+    const data = await res.json();
+    dogeSession = data.session_id;
+    dogeContent = content;
+    dogeTier = selectedTier;
+    dogeExpiry = data.expires_at;
+    showDogeOverlay(data);
+  } catch(e) {
+    showOutput('// Connection error. Try again.', 'ERROR');
+  }
+  setLoading(false);
+}
+
+function showDogeOverlay(data) {
+  document.getElementById('dogeAmount').textContent = `${data.amount_doge} DOGE`;
+  document.getElementById('dogeUsd').textContent = `≈ $${data.amount_usd} USD  |  1 DOGE = $${data.doge_rate.toFixed(5)}`;
+  document.getElementById('dogeAddress').textContent = data.address;
+  document.getElementById('dogeNote').textContent =
+    `Send exactly ${data.amount_doge} DOGE — the decimal digits are your session fingerprint. Do not round.`;
+  document.getElementById('dogeOverlay').classList.add('visible');
+  document.getElementById('dogeStatus').textContent = '// Watching for your transaction...';
+  document.getElementById('dogeStatus').className = 'doge-status';
+  startPoll();
+  startTimer();
+}
+
+function startTimer() {
+  const timerEl = document.getElementById('dogeTimer');
+  const update = () => {
+    const remaining = Math.max(0, dogeExpiry - Date.now()/1000);
+    const m = Math.floor(remaining / 60);
+    const s = Math.floor(remaining % 60);
+    timerEl.textContent = `// Window closes in ${m}:${s.toString().padStart(2,'0')}`;
+    if (remaining <= 0) timerEl.textContent = '// Window closed.';
+  };
+  update();
+  const t = setInterval(() => { update(); if (Date.now()/1000 > dogeExpiry) clearInterval(t); }, 1000);
+}
+
+function startPoll() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch('/poll', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ session_id: dogeSession })
+      });
+      const data = await res.json();
+      if (data.paid) {
+        clearInterval(pollInterval);
+        document.getElementById('dogeStatus').textContent = '◆ Payment confirmed. Delivering your read...';
+        document.getElementById('dogeStatus').className = 'doge-status confirmed';
+        setTimeout(() => {
+          document.getElementById('dogeOverlay').classList.remove('visible');
+          deliverDogeAudit();
+        }, 1500);
+      } else if (data.expired) {
+        clearInterval(pollInterval);
+        document.getElementById('dogeStatus').textContent = '// Window expired. Start a new checkout.';
+        document.getElementById('dogeStatus').className = 'doge-status expired';
+      }
+    } catch(e) {}
+  }, 5000); // poll every 5s
+}
+
+async function deliverDogeAudit() {
+  setLoading(true);
+  const endpoint = dogeTier === 'agent' ? '/audit/agent' : '/audit/full';
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ content: dogeContent, session_id: dogeSession })
+    });
+    const data = await res.json();
+    showOutput(data.audit || data.detail, dogeTier === 'agent' ? 'AGENT AUDIT' : 'FULL READ');
+  } catch(e) {
+    showOutput('// Delivery error. Contact support with session ID: ' + dogeSession, 'ERROR');
+  }
+  setLoading(false);
+}
+
+function cancelDoge() {
+  clearInterval(pollInterval);
+  document.getElementById('dogeOverlay').classList.remove('visible');
+  dogeSession = null;
+}
+
+function copyAddress() {
+  const addr = document.getElementById('dogeAddress').textContent.trim();
+  navigator.clipboard.writeText(addr).then(() => {
+    document.getElementById('copyHint').textContent = '✓ copied';
+    setTimeout(() => document.getElementById('copyHint').textContent = '↑ click address to copy', 2000);
+  });
+}
+</script>
