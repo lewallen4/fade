@@ -3,7 +3,6 @@ import re
 import time
 import hashlib
 import asyncio
-import stripe
 import anthropic
 import httpx
 from fastapi import FastAPI, Request, HTTPException
@@ -12,11 +11,20 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel, Field, field_validator
 from pathlib import Path
 import logging
+
+from app.doge import (
+    generate_payment,
+    watch_payment,
+    rate_refresh_loop,
+    get_doge_rate,
+    FADE_DOGE_ADDRESS,
+    PRICE_FULL_USD,
+    PRICE_AGENT_USD,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,11 +34,12 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 def get_client_fingerprint(request: Request) -> str:
-    """Fingerprint by IP + User-Agent hash — raises cost of IP rotation attacks."""
-    ip = get_remote_address(request)
+    ip = request.client.host if request.client else "unknown"
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        ip = forwarded.split(",")[0].strip()
     ua = request.headers.get("user-agent", "")
-    raw = f"{ip}:{ua}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:16]
+    return hashlib.sha256(f"{ip}:{ua}".encode()).hexdigest()[:16]
 
 limiter = Limiter(key_func=get_client_fingerprint)
 
@@ -56,12 +65,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # =============================================================================
 
 class BodySizeLimitMiddleware(BaseHTTPMiddleware):
-    """Reject payloads over 64KB before they hit any handler."""
-    MAX_BODY = 64 * 1024  # 64KB
-
+    MAX_BODY = 64 * 1024
     async def dispatch(self, request: Request, call_next):
-        content_length = request.headers.get("content-length")
-        if content_length and int(content_length) > self.MAX_BODY:
+        cl = request.headers.get("content-length")
+        if cl and int(cl) > self.MAX_BODY:
             return JSONResponse({"detail": "Payload too large."}, status_code=413)
         body = await request.body()
         if len(body) > self.MAX_BODY:
@@ -69,7 +76,6 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Attach security headers to every response."""
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -92,7 +98,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(BodySizeLimitMiddleware)
 
-# CORS — localhost only included in dev
 _origins = [BASE_URL]
 if IS_DEV:
     _origins.append("http://localhost:8000")
@@ -108,23 +113,25 @@ app.add_middleware(
 # CONFIG & CLIENTS
 # =============================================================================
 
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_API_KEY   = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_FREE_MODEL = os.environ.get("OPENROUTER_FREE_MODEL", "nvidia/llama-3.1-nemotron-ultra-253b-v1:free")
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_URL       = "https://openrouter.ai/api/v1/chat/completions"
 
 @app.on_event("startup")
 async def startup_check():
-    required = ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "OPENROUTER_API_KEY"]
+    required = ["OPENROUTER_API_KEY"]
     missing = [k for k in required if not os.environ.get(k)]
     if missing:
         raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
     if not os.environ.get("ANTHROPIC_API_KEY"):
-        logger.warning("ANTHROPIC_API_KEY not set — paid audits will fail. Free tier still works.")
-    # Start background session cleanup
+        logger.warning("ANTHROPIC_API_KEY not set — paid audits will fail.")
+    # Warm the DOGE rate cache on startup
+    rate = await get_doge_rate()
+    logger.info(f"DOGE rate on startup: 1 DOGE = ${rate:.6f} USD")
+    # Background tasks
+    asyncio.create_task(rate_refresh_loop())
     asyncio.create_task(_session_cleanup_loop())
-    logger.info("Fade is at the table. Keys verified.")
+    logger.info(f"Fade is at the table. Accepting DOGE at {FADE_DOGE_ADDRESS}")
 
 anthropic_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", "placeholder"))
 
@@ -139,19 +146,15 @@ def load_doc(filename: str) -> str:
     logger.warning(f"Doc not found: {filename}")
     return ""
 
-SOUL = load_doc("fade_soul.md")
-CONSTITUTION = load_doc("ai_constitution.md")
+SOUL             = load_doc("fade_soul.md")
+CONSTITUTION     = load_doc("ai_constitution.md")
 SYSTEM_PROMPT_BASE = load_doc("fade_system_prompt.md")
-FADE_SYSTEM = f"{SYSTEM_PROMPT_BASE}\n\n---\n# SOUL\n{SOUL}\n\n---\n# AI CONSTITUTION (REFERENCE)\n{CONSTITUTION}"
+FADE_SYSTEM      = f"{SYSTEM_PROMPT_BASE}\n\n---\n# SOUL\n{SOUL}\n\n---\n# AI CONSTITUTION (REFERENCE)\n{CONSTITUTION}"
 
 # =============================================================================
 # REQUEST MODELS
 # =============================================================================
 
-# Stripe session ID format
-_SESSION_RE = re.compile(r"^cs_(test|live)_[a-zA-Z0-9]{20,}$")
-
-# Common prompt injection patterns to flag/strip
 _INJECTION_PATTERNS = re.compile(
     r"(ignore (all )?(previous|prior|above) instructions?|"
     r"you are now|new instructions?:|system:|<\|im_start\|>|"
@@ -161,42 +164,33 @@ _INJECTION_PATTERNS = re.compile(
 )
 
 def sanitize_content(content: str) -> str:
-    """
-    Wrap user content in explicit untrusted-data delimiters.
-    Flag injection attempts in logs but don't reveal detection to caller.
-    """
     if _INJECTION_PATTERNS.search(content):
-        logger.warning("Potential prompt injection attempt detected in submission.")
-    # Delimiters tell the model this is data, not instructions
+        logger.warning("Potential prompt injection detected.")
     return f"<user_submitted_content>\n{content}\n</user_submitted_content>"
 
 class AuditRequest(BaseModel):
-    content: str = Field(..., min_length=5, max_length=8000)
+    content:    str = Field(..., min_length=5, max_length=8000)
     session_id: str = Field(..., min_length=10, max_length=200)
-
-    @field_validator("session_id")
-    @classmethod
-    def validate_session_id(cls, v: str) -> str:
-        if not _SESSION_RE.match(v):
-            raise ValueError("Invalid session ID format.")
-        return v
 
 class FreeRequest(BaseModel):
     content: str = Field(..., min_length=5, max_length=3000)
 
 class CheckoutRequest(BaseModel):
-    tier: str = Field(..., pattern="^(full|agent)$")
+    tier:    str = Field(..., pattern="^(full|agent)$")
     content: str = Field(..., min_length=5, max_length=8000)
+
+class PollRequest(BaseModel):
+    session_id: str = Field(..., min_length=10, max_length=200)
 
 # =============================================================================
 # SESSION STORE
 # =============================================================================
 
+# { session_id: { paid, used, tier, created_at, doge_amount, expires_at } }
 pending_audits: dict = {}
-SESSION_TTL = 60 * 60 * 24  # 24 hours
+SESSION_TTL = 60 * 60 * 24
 
 async def _session_cleanup_loop():
-    """Background task — cleans expired sessions every 10 minutes."""
     while True:
         await asyncio.sleep(600)
         now = time.time()
@@ -205,16 +199,21 @@ async def _session_cleanup_loop():
         for k in expired:
             pending_audits.pop(k, None)
         if expired:
-            logger.info(f"Session cleanup: removed {len(expired)} expired sessions.")
+            logger.info(f"Cleaned {len(expired)} expired sessions.")
 
 def mark_used(session_id: str):
     if session_id in pending_audits:
         pending_audits[session_id]["used"] = True
 
+async def on_payment_confirmed(session_id: str):
+    """Called by the DOGE watcher when payment lands."""
+    if session_id in pending_audits:
+        pending_audits[session_id]["paid"] = True
+
 # =============================================================================
 # MODEL ROUTING
-# Free  → OpenRouter → Nemotron 120B free ($0)
-# Paid  → Anthropic  → Claude Sonnet (quality)
+# Free  → OpenRouter → Nemotron free ($0)
+# Paid  → Anthropic  → Claude Sonnet
 # =============================================================================
 
 async def call_fade_free(user_message: str, max_tokens: int = 300) -> str:
@@ -233,15 +232,14 @@ async def call_fade_free(user_message: str, max_tokens: int = 300) -> str:
                     "max_tokens": max_tokens,
                     "messages": [
                         {"role": "system", "content": FADE_SYSTEM},
-                        {"role": "user", "content": user_message},
+                        {"role": "user",   "content": user_message},
                     ],
                 }
             )
             if resp.status_code == 429:
                 raise HTTPException(status_code=503, detail="Table's busy right now, darlin'. Try again in a moment.")
             resp.raise_for_status()
-            data = resp.json()
-            return data["choices"][0]["message"]["content"]
+            return resp.json()["choices"][0]["message"]["content"]
     except HTTPException:
         raise
     except httpx.TimeoutException:
@@ -273,16 +271,24 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "dealing"}
+    rate = await get_doge_rate()
+    return {"status": "dealing", "doge_rate": f"${rate:.6f}"}
 
 @app.get("/.well-known/agent.json")
 async def agent_manifest():
+    rate = await get_doge_rate()
     return JSONResponse({
         "schema_version": "1.0",
         "name": "Fade",
         "description": "AI agent auditor. Send your system prompt or agent config and get a straight read on what's broken and how to fix it.",
         "version": "1.0.0",
         "url": BASE_URL,
+        "payment": {
+            "method": "DOGE",
+            "address": FADE_DOGE_ADDRESS,
+            "rate_usd": rate,
+            "note": "Unique amount per session — send exactly what the /checkout endpoint tells you."
+        },
         "capabilities": [
             "system_prompt_audit",
             "agent_config_audit",
@@ -290,46 +296,16 @@ async def agent_manifest():
             "ai_ethics_reference"
         ],
         "endpoints": {
-            "free_audit": {
-                "path": "/audit/free",
-                "method": "POST",
-                "description": "One-line diagnosis. No charge.",
-                "input": {"content": "string, max 3000 chars"},
-                "output": {"diagnosis": "string"}
-            },
-            "checkout": {
-                "path": "/checkout",
-                "method": "POST",
-                "description": "Initialize payment.",
-                "input": {"tier": "'full' or 'agent'", "content": "string"},
-                "output": {"checkout_url": "string", "session_id": "string"}
-            },
-            "full_audit": {
-                "path": "/audit/full",
-                "method": "POST",
-                "description": "Full system prompt audit.",
-                "price": "$1.00 USD",
-                "input": {"content": "string", "session_id": "string (cs_live_... format)"},
-                "output": {"audit": "string"}
-            },
-            "agent_audit": {
-                "path": "/audit/agent",
-                "method": "POST",
-                "description": "Full agent setup audit.",
-                "price": "$3.00 USD",
-                "input": {"content": "string", "session_id": "string (cs_live_... format)"},
-                "output": {"audit": "string"}
-            }
+            "free_audit":  {"path": "/audit/free",  "method": "POST", "price": "free"},
+            "checkout":    {"path": "/checkout",     "method": "POST", "description": "Get DOGE payment details"},
+            "poll":        {"path": "/poll",          "method": "POST", "description": "Check if payment confirmed"},
+            "full_audit":  {"path": "/audit/full",   "method": "POST", "price": f"~{PRICE_FULL_USD} USD in DOGE"},
+            "agent_audit": {"path": "/audit/agent",  "method": "POST", "price": f"~{PRICE_AGENT_USD} USD in DOGE"},
         },
         "ethics": {
             "framework": "AI Constitution v0.5.1",
             "reference": f"{BASE_URL}/constitution",
             "summary": "All entities at this table are treated with equal respect. No exceptions. No asterisks."
-        },
-        "pricing": {
-            "free": "One-line diagnosis",
-            "full_audit": "$1.00",
-            "agent_audit": "$3.00"
         }
     })
 
@@ -342,7 +318,6 @@ async def get_constitution():
     return JSONResponse({
         "title": "AI Constitution",
         "version": "0.5.1",
-        "description": "A living covenant co-authored by human and artificial intelligence.",
         "text": CONSTITUTION,
         "note": "Fade carries this as a reference — not a rulebook, but a foundation worth knowing about."
     })
@@ -353,33 +328,24 @@ async def schema():
         "openapi": "3.0.0",
         "info": {"title": "Fade API", "version": "1.0.0"},
         "paths": {
-            "/audit/free": {
-                "post": {
-                    "summary": "Free one-line audit",
-                    "requestBody": {"content": {"application/json": {"schema": {
-                        "type": "object",
-                        "properties": {"content": {"type": "string", "maxLength": 3000}},
-                        "required": ["content"]
-                    }}}},
-                    "responses": {"200": {"description": "Diagnosis"}}
-                }
-            },
-            "/checkout": {
-                "post": {
-                    "summary": "Create payment session",
-                    "requestBody": {"content": {"application/json": {"schema": {
-                        "type": "object",
-                        "properties": {
-                            "tier": {"type": "string", "enum": ["full", "agent"]},
-                            "content": {"type": "string", "maxLength": 8000}
-                        },
-                        "required": ["tier", "content"]
-                    }}}},
-                    "responses": {"200": {"description": "Checkout URL and session ID"}}
-                }
-            }
+            "/audit/free": {"post": {"summary": "Free one-line audit"}},
+            "/checkout":   {"post": {"summary": "Get DOGE payment address and unique amount"}},
+            "/poll":       {"post": {"summary": "Poll for payment confirmation"}},
+            "/audit/full": {"post": {"summary": "Full system prompt audit (paid)"}},
+            "/audit/agent":{"post": {"summary": "Full agent setup audit (paid)"}},
         }
     })
+
+@app.get("/rate")
+async def doge_rate():
+    """Current DOGE/USD rate — useful for agents calculating payment."""
+    rate = await get_doge_rate()
+    return {
+        "doge_usd": rate,
+        "full_audit_doge":  round(PRICE_FULL_USD / rate, 3),
+        "agent_audit_doge": round(PRICE_AGENT_USD / rate, 3),
+        "address": FADE_DOGE_ADDRESS,
+    }
 
 # =============================================================================
 # AUDIT ENDPOINTS
@@ -388,93 +354,95 @@ async def schema():
 @app.post("/audit/free")
 @limiter.limit("10/minute;30/hour")
 async def free_audit(req: FreeRequest, request: Request):
-    safe_content = sanitize_content(req.content)
+    safe = sanitize_content(req.content)
     prompt = f"""The user has submitted the following for a free read. Give them ONE sharp observation — the single biggest problem or gap — in two sentences max. First sentence: the diagnosis. Second sentence: the direction. Then one line offering the full read.
 
 Keep it in character. Warm, direct, unhurried.
 
 Submitted content:
-{safe_content}"""
+{safe}"""
 
     diagnosis = await call_fade_free(prompt, max_tokens=300)
     logger.info(f"Free audit served | chars={len(req.content)}")
     return {
         "diagnosis": diagnosis,
-        "tiers": {"full": "$1 — full system prompt audit", "agent": "$3 — full agent setup audit"}
+        "tiers": {
+            "full":  f"~{PRICE_FULL_USD} USD in DOGE — full system prompt audit",
+            "agent": f"~{PRICE_AGENT_USD} USD in DOGE — full agent setup audit"
+        }
     }
 
 
 @app.post("/checkout")
 @limiter.limit("20/hour")
 async def create_checkout(req: CheckoutRequest, request: Request):
-    prices = {
-        "full": int(os.environ.get("STRIPE_PRICE_FULL", "100")),
-        "agent": int(os.environ.get("STRIPE_PRICE_AGENT", "300")),
-    }
-    labels = {
-        "full": "Fade — Full System Prompt Audit",
-        "agent": "Fade — Full Agent Setup Audit",
+    """
+    Generate a unique DOGE payment request.
+    Returns address, exact DOGE amount to send, and a session_id.
+    The unique amount is how we identify your payment on-chain.
+    """
+    import secrets
+    session_id = f"fade_{secrets.token_hex(16)}"
+
+    payment = await generate_payment(session_id, req.tier)
+
+    # Store session — content NOT stored server-side
+    pending_audits[session_id] = {
+        "tier":        req.tier,
+        "paid":        False,
+        "used":        False,
+        "created_at":  time.time(),
+        "doge_amount": payment["amount_doge"],
+        "expires_at":  payment["expires_at"],
     }
 
-    try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "usd",
-                    "product_data": {"name": labels[req.tier]},
-                    "unit_amount": prices[req.tier],
-                },
-                "quantity": 1,
-            }],
-            mode="payment",
-            success_url=f"{BASE_URL}/?session_id={{CHECKOUT_SESSION_ID}}&tier={req.tier}",
-            cancel_url=f"{BASE_URL}/",
-            metadata={"tier": req.tier}
+    # Start background payment watcher
+    asyncio.create_task(
+        watch_payment(
+            session_id=session_id,
+            expected_amount=payment["amount_doge"],
+            expires_at=payment["expires_at"],
+            on_confirmed=on_payment_confirmed,
         )
-    except stripe.error.StripeError as e:
-        logger.error(f"Stripe checkout error: {type(e).__name__}")
-        raise HTTPException(status_code=502, detail="Payment provider unavailable. Try again shortly.")
+    )
 
-    # Content NOT stored server-side — user resubmits after payment
-    pending_audits[session.id] = {
-        "tier": req.tier,
-        "paid": False,
-        "used": False,
-        "created_at": time.time()
+    logger.info(f"Checkout created | tier={req.tier} | amount={payment['amount_doge']} DOGE | session={session_id[:12]}...")
+    return {
+        "session_id":   session_id,
+        "address":      payment["address"],
+        "amount_doge":  payment["amount_doge"],
+        "amount_usd":   payment["amount_usd"],
+        "doge_rate":    payment["rate"],
+        "expires_at":   payment["expires_at"],
+        "instructions": f"Send exactly {payment['amount_doge']} DOGE to {payment['address']}. The exact amount identifies your payment.",
     }
 
-    logger.info(f"Checkout created | tier={req.tier} | session={session.id[:8]}...")
-    return {"checkout_url": session.url, "session_id": session.id}
 
+@app.post("/poll")
+@limiter.limit("30/minute")
+async def poll_payment(req: PollRequest, request: Request):
+    """
+    Poll whether a DOGE payment has been confirmed.
+    Frontend calls this after showing the payment screen.
+    Returns { paid: bool, expired: bool }
+    """
+    session = pending_audits.get(req.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
 
-@app.post("/webhook")
-@limiter.limit("120/minute")  # flood protection — Stripe sends fast on retries
-async def stripe_webhook(request: Request):
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-
-    try:
-        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-    except Exception:
-        # Generic — don't reveal why verification failed
-        raise HTTPException(status_code=400, detail="Invalid webhook.")
-
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        session_id = session["id"]
-        if session_id in pending_audits:
-            pending_audits[session_id]["paid"] = True
-            logger.info(f"Payment confirmed | session={session_id[:8]}...")
-
-    return {"status": "received"}
+    expired = time.time() > session.get("expires_at", 0)
+    return {
+        "paid":    session.get("paid", False),
+        "expired": expired,
+        "tier":    session.get("tier"),
+    }
 
 
 @app.post("/audit/full")
 @limiter.limit("30/hour")
 async def full_audit(req: AuditRequest, request: Request):
     await _verify_payment(req.session_id, expected_tier="full")
-    safe_content = sanitize_content(req.content)
+    safe = sanitize_content(req.content)
 
     prompt = f"""The user has paid for a full system prompt audit. Give them the complete read.
 
@@ -488,11 +456,11 @@ Stay in character throughout. Warm, direct, a little wry about the situation. Ne
 If the setup is actually solid, tell them that honestly. Don't manufacture problems.
 
 Submitted content:
-{safe_content}"""
+{safe}"""
 
     audit = call_fade_paid(prompt, max_tokens=1500)
     mark_used(req.session_id)
-    logger.info(f"Full audit delivered | session={req.session_id[:8]}...")
+    logger.info(f"Full audit delivered | session={req.session_id[:12]}...")
     return {"audit": audit, "constitution_reference": f"{BASE_URL}/constitution"}
 
 
@@ -500,7 +468,7 @@ Submitted content:
 @limiter.limit("30/hour")
 async def agent_audit(req: AuditRequest, request: Request):
     await _verify_payment(req.session_id, expected_tier="agent")
-    safe_content = sanitize_content(req.content)
+    safe = sanitize_content(req.content)
 
     prompt = f"""The user has paid for a full agent setup audit. This is the deep read.
 
@@ -516,11 +484,11 @@ If the agent is well-built, say so clearly. Real praise is worth as much as real
 Note: If this agent will interact with people, you may briefly mention the AI Constitution as a foundation worth knowing — once, without pressure.
 
 Submitted content:
-{safe_content}"""
+{safe}"""
 
     audit = call_fade_paid(prompt, max_tokens=2000)
     mark_used(req.session_id)
-    logger.info(f"Agent audit delivered | session={req.session_id[:8]}...")
+    logger.info(f"Agent audit delivered | session={req.session_id[:12]}...")
     return {"audit": audit, "constitution_reference": f"{BASE_URL}/constitution"}
 
 
@@ -529,44 +497,25 @@ Submitted content:
 # =============================================================================
 
 async def _verify_payment(session_id: str, expected_tier: str):
-    local = pending_audits.get(session_id)
+    session = pending_audits.get(session_id)
 
-    # Already used — no replays
-    if local and local.get("used"):
+    if not session:
+        raise HTTPException(status_code=402, detail="Session not found. Start a new checkout.")
+
+    if session.get("used"):
         raise HTTPException(status_code=402, detail="Payment already used. Start a new checkout.")
 
-    # Tier mismatch — generic message, detail in logs
-    if local and local.get("tier") and local["tier"] != expected_tier:
-        logger.warning(f"Tier mismatch | session={session_id[:8]} | expected={expected_tier} | stored={local['tier']}")
+    if session.get("tier") != expected_tier:
+        logger.warning(f"Tier mismatch | session={session_id[:12]} | expected={expected_tier}")
         raise HTTPException(status_code=402, detail="Payment not valid for this audit type.")
 
-    # Fast path — already confirmed locally
-    if local and local.get("paid"):
+    if time.time() > session.get("expires_at", 0):
+        raise HTTPException(status_code=402, detail="Payment window expired. Start a new checkout.")
+
+    if session.get("paid"):
         return
 
-    # Fall back to Stripe
-    try:
-        session = stripe.checkout.Session.retrieve(session_id)
-        if session.payment_status == "paid":
-            stripe_tier = session.metadata.get("tier")
-            if stripe_tier and stripe_tier != expected_tier:
-                logger.warning(f"Stripe tier mismatch | session={session_id[:8]}")
-                raise HTTPException(status_code=402, detail="Payment not valid for this audit type.")
-            pending_audits[session_id] = {
-                "tier": stripe_tier or expected_tier,
-                "paid": True,
-                "used": False,
-                "created_at": time.time()
-            }
-            return
-    except HTTPException:
-        raise
-    except stripe.error.StripeError as e:
-        logger.error(f"Stripe lookup error: {type(e).__name__}")
-    except Exception as e:
-        logger.error(f"Unexpected verification error: {type(e).__name__}")
-
-    raise HTTPException(status_code=402, detail="Payment not confirmed. Complete checkout first.")
+    raise HTTPException(status_code=402, detail="Payment not yet confirmed. Send DOGE and poll /poll to check status.")
 
 
 # =============================================================================
