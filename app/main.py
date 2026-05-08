@@ -247,40 +247,15 @@ async def call_fade_free(user_message: str, max_tokens: int = 300) -> str:
             data = resp.json()
             msg = data["choices"][0]["message"]
 
-            # Reasoning models return thinking in multiple possible places:
-            # 1. msg["reasoning"] — separate field (OpenRouter standard)
-            # 2. <think>...</think> tags inside msg["content"]
-            # 3. Raw text before the actual response (no delimiter — Nemotron quirk)
-            # We want only the final response, not the scratchpad.
-
+            # Nemotron with reasoning enabled returns:
+            # msg["content"]  → clean final response (what we want)
+            # msg["reasoning"] → thinking text (separate field, ignore)
+            # msg["reasoning_details"] → array of thinking steps (ignore)
+            # Just return content directly — reasoning never bleeds into content.
             import re
-
-            # Prefer content field; reasoning field is silently discarded
             text = msg.get("content") or ""
-
-            # Strip <think>...</think> blocks
+            # Belt and suspenders: strip <think> tags if any model uses them
             text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
-
-            # Strip raw "Okay, ..." / "Hmm..." preamble paragraphs that are
-            # clearly internal reasoning leaked into content with no tags.
-            # Heuristic: if text starts with conversational filler before
-            # the actual response, drop everything up to the first line
-            # that doesn't read like internal monologue.
-            monologue_pattern = re.compile(
-                r"^(Okay[,.]|Alright[,.]|Hmm[,.]|So[,.]|Let me|I need to|I should|"
-                r"I'm |The user|Looking at|Scanning|First[,.]|Now[,.]|Right[,.])",
-                re.IGNORECASE
-            )
-            lines = text.split("\n")
-            # Find first line that doesn't look like internal monologue
-            start = 0
-            for i, line in enumerate(lines):
-                stripped = line.strip()
-                if stripped and not monologue_pattern.match(stripped):
-                    start = i
-                    break
-            text = "\n".join(lines[start:]).strip()
-
             return text
     except HTTPException:
         raise
