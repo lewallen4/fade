@@ -70,8 +70,11 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
     MAX_BODY = 64 * 1024
     async def dispatch(self, request: Request, call_next):
         cl = request.headers.get("content-length")
-        if cl and int(cl) > self.MAX_BODY:
-            return JSONResponse({"detail": "Payload too large."}, status_code=413)
+        try:
+            if cl and int(cl) > self.MAX_BODY:
+                return JSONResponse({"detail": "Payload too large."}, status_code=413)
+        except (ValueError, TypeError):
+            pass  # malformed header — let body check handle it
         body = await request.body()
         if len(body) > self.MAX_BODY:
             return JSONResponse({"detail": "Payload too large."}, status_code=413)
@@ -122,34 +125,50 @@ app.add_middleware(
 # --- Certification ---
 FADE_CERT_SECRET = os.environ.get("FADE_CERT_SECRET", hashlib.sha256(b"fade-default-secret-change-me").hexdigest())
 
+CERT_TTL_SECONDS = int(os.environ.get("CERT_TTL_DAYS", "90")) * 86400
+
 def issue_cert(subject: str, tier: str, score: str) -> str:
-    """Issue a signed certification token. Self-contained, no DB needed."""
-    import time as t
-    payload = f"{subject}|{tier}|{score}|{int(t.time())}"
-    sig = hmac.new(FADE_CERT_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[:16]
+    """Issue a signed certification token. Self-contained, no DB needed.
+    Subject is base64-encoded to prevent pipe-character injection attacks.
+    Token includes expiry. Signature is 32 hex chars (128-bit security).
+    """
+    if not subject or len(subject) > 200:
+        raise ValueError("Invalid subject")
+    subject_b64 = base64.urlsafe_b64encode(subject.encode()).decode().rstrip("=")
+    issued_at = int(time.time())
+    expires_at = issued_at + CERT_TTL_SECONDS
+    payload = f"{subject_b64}|{tier}|{score}|{issued_at}|{expires_at}"
+    sig = hmac.new(FADE_CERT_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[:32]
     raw = f"{payload}|{sig}"
     return base64.urlsafe_b64encode(raw.encode()).decode()
 
 def verify_cert(token: str) -> dict | None:
-    """Verify a cert token. Returns payload dict or None if invalid."""
+    """Verify a cert token. Returns payload dict or None if invalid/expired."""
+    if len(token) > 2000:
+        return None
     try:
-        raw = base64.urlsafe_b64decode(token.encode()).decode()
+        raw = base64.urlsafe_b64decode(token.encode() + b"==").decode()
         parts = raw.rsplit("|", 1)
         if len(parts) != 2:
             return None
         payload, sig = parts
-        expected = hmac.new(FADE_CERT_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[:16]
+        expected = hmac.new(FADE_CERT_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[:32]
         if not hmac.compare_digest(sig, expected):
             return None
         fields = payload.split("|")
-        if len(fields) != 4:
+        if len(fields) != 5:
             return None
+        subject = base64.urlsafe_b64decode(fields[0] + "==").decode()
+        expires_at = int(fields[4])
+        if time.time() > expires_at:
+            return {"valid": False, "reason": "expired", "subject": subject}
         return {
-            "subject": fields[0],
-            "tier": fields[1],
-            "score": fields[2],
-            "issued_at": int(fields[3]),
-            "valid": True
+            "subject":    subject,
+            "tier":       fields[1],
+            "score":      fields[2],
+            "issued_at":  int(fields[3]),
+            "expires_at": expires_at,
+            "valid":      True
         }
     except Exception:
         return None
@@ -166,6 +185,9 @@ async def startup_check():
         raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
     if not os.environ.get("ANTHROPIC_API_KEY"):
         logger.warning("ANTHROPIC_API_KEY not set — paid audits will fail.")
+    _default_secret = hashlib.sha256(b"fade-default-secret-change-me").hexdigest()
+    if FADE_CERT_SECRET == _default_secret:
+        raise RuntimeError("FADE_CERT_SECRET is using the default value. Set a real secret in Railway Variables.")
     # Warm the DOGE rate cache on startup
     rate = await get_doge_rate()
     logger.info(f"DOGE rate on startup: 1 DOGE = ${rate:.6f} USD")
@@ -213,6 +235,13 @@ class AuditRequest(BaseModel):
     content:    str = Field(..., min_length=5, max_length=8000)
     session_id: str = Field(..., min_length=10, max_length=200)
     lang:       str = Field(default='en', pattern='^(en|zh)$')
+
+    @field_validator("session_id")
+    @classmethod
+    def validate_session_id(cls, v: str) -> str:
+        if not v.startswith("fade_"):
+            raise ValueError("Invalid session ID.")
+        return v
 
 class FreeRequest(BaseModel):
     content: str = Field(..., min_length=5, max_length=5000)
@@ -292,15 +321,50 @@ async def call_fade_free(user_message: str, max_tokens: int = 300) -> str:
             data = resp.json()
             msg = data["choices"][0]["message"]
 
-            # Nemotron with reasoning enabled returns:
-            # msg["content"]  → clean final response (what we want)
-            # msg["reasoning"] → thinking text (separate field, ignore)
-            # msg["reasoning_details"] → array of thinking steps (ignore)
-            # Just return content directly — reasoning never bleeds into content.
-            import re
+            # Nemotron reasoning response structure:
+            # msg["content"]          → final response (what we want)
+            # msg["reasoning"]        → thinking text (separate field, discard)
+            # msg["reasoning_details"]→ thinking array (discard)
+            #
+            # If content is empty/null but reasoning exists, the model only
+            # returned its thinking and not a final answer — retry with
+            # reasoning disabled as fallback.
+
             text = msg.get("content") or ""
-            # Belt and suspenders: strip <think> tags if any model uses them
+
+            # Strip <think>...</think> blocks (belt and suspenders)
             text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+
+            # If content is empty but reasoning exists, model leaked thinking only
+            if not text and msg.get("reasoning"):
+                logger.warning("OpenRouter returned empty content with reasoning only — retrying without reasoning")
+                # Recursive retry with reasoning disabled
+                retry_resp = await client.post(
+                    OPENROUTER_URL,
+                    headers={
+                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": BASE_URL,
+                        "X-Title": "Fade Agent Auditor",
+                    },
+                    json={
+                        "model": OPENROUTER_FREE_MODEL,
+                        "max_tokens": max_tokens,
+                        "messages": [
+                            {"role": "system", "content": FADE_SYSTEM},
+                            {"role": "user",   "content": user_message},
+                        ],
+                    }
+                )
+                retry_resp.raise_for_status()
+                retry_data = retry_resp.json()
+                text = retry_data["choices"][0]["message"].get("content") or ""
+                text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+
+            if not text:
+                logger.error(f"OpenRouter returned empty content. Full msg keys: {list(msg.keys())}")
+                raise HTTPException(status_code=502, detail="Couldn't reach the table. Try again shortly.")
+
             return text
     except HTTPException:
         raise
@@ -433,9 +497,23 @@ async def get_news():
         import json
         try:
             data = json.loads(path.read_text())
-            return JSONResponse(data)
-        except Exception:
-            pass
+            # Validate structure before returning
+            if not isinstance(data, dict) or not isinstance(data.get("posts"), list):
+                logger.warning("news.json has invalid structure")
+                return JSONResponse({"posts": []})
+            # Sanitize posts — only pass known safe fields
+            safe_posts = []
+            for p in data["posts"]:
+                if isinstance(p, dict) and "title" in p:
+                    safe_posts.append({
+                        "title":   str(p.get("title", ""))[:200],
+                        "summary": str(p.get("summary", ""))[:1000],
+                        "date":    str(p.get("date", ""))[:20],
+                        "url":     str(p.get("url", ""))[:500],
+                    })
+            return JSONResponse({"posts": safe_posts})
+        except Exception as e:
+            logger.error(f"news.json read error: {type(e).__name__}")
     return JSONResponse({"posts": []})
 
 @app.get("/schema")
@@ -489,6 +567,8 @@ async def certify(req: CertifyRequest, request: Request):
 @app.get("/verify/{token}")
 async def verify_token(token: str):
     """Verify a Fade cert token. Public. 200 always — invalid is a valid response."""
+    if len(token) > 2000:
+        return JSONResponse({"valid": False, "detail": "Token invalid or tampered."})
     result = verify_cert(token)
     if not result:
         return JSONResponse({"valid": False, "detail": "Token invalid or tampered."})
