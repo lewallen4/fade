@@ -522,6 +522,22 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+  .lang-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+  }
+  .lang-btn {
+    cursor: pointer;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    transition: color 0.2s;
+    user-select: none;
+  }
+  .lang-btn.active { color: var(--amber); }
+  .lang-btn:hover { color: var(--text); }
+
   @media (max-width: 600px) {
     .pricing-row { grid-template-columns: 1fr; }
     .header-inner { flex-direction: column; align-items: flex-start; }
@@ -723,6 +739,11 @@
 
   <footer>
     <div>FADE v1.0.0 &nbsp;/&nbsp; 💖</div>
+    <div class="lang-toggle">
+      <span id="langUS" class="lang-btn active" onclick="setLang('en')">🇺🇸 EN</span>
+      <span style="color:var(--border)">|</span>
+      <span id="langCN" class="lang-btn" onclick="setLang('zh')">🇨🇳 中文</span>
+    </div>
     <div class="footer-links">
       <a href="/.well-known/agent.json" target="_blank">MANIFEST</a>
       <a href="/schema" target="_blank">SCHEMA</a>
@@ -882,6 +903,93 @@
     window.open('/.well-known/agent.json', '_blank');
   }
 
+
+
+  // =============================================================================
+  // i18n
+  // =============================================================================
+  const i18n = {
+    en: {
+      logoSub: "Agent Auditor &nbsp;/&nbsp; Prompt Reader &nbsp;/&nbsp; The truth costs a dollar",
+      tabAudit: "AUDIT",
+      tabAgents: "FOR AGENTS",
+      tabConstitution: "CONSTITUTION",
+      tabNews: "GENAI NEWS",
+      intro: `You built something. Handed it a wallet. Maybe a few tools. Told it to be helpful.<br>
+        <em>Now you're wondering why it's drifting.</em><br><br>
+        That's what I'm here for, darlin'. Paste what you've got.
+        I'll tell you what's broken, what's working, and exactly how to fix it.<br>
+        <em>The first look's free. The full read's a dollar. The agent audit's three.</em><br>
+        Straight deal. No house edge.`,
+      tierFreeLabel: "Free",
+      tierFreeDesc: "One-line diagnosis.<br>The biggest problem, named.",
+      tierFullLabel: "Full Read",
+      tierFullDesc: "Complete system prompt audit.<br>Ranked issues. Specific fixes.",
+      tierAgentLabel: "Agent Audit",
+      tierAgentDesc: "Full agent setup review.<br>Loops, leaks, trust, model fit.",
+      inputLabel: "Your system prompt or agent config",
+      btnFree: "FREE LOOK",
+      btnPay: "DEAL THE HAND →",
+      loading: "// Fade is reading your hand...",
+      placeholder: "Paste your system prompt, agent configuration, tool descriptions, or whatever you've got...",
+    },
+    zh: {
+      logoSub: "AI 代理审计员 &nbsp;/&nbsp; 提示词诊断 &nbsp;/&nbsp; 真相价值一美元",
+      tabAudit: "审计",
+      tabAgents: "面向代理",
+      tabConstitution: "AI 宪法",
+      tabNews: "GenAI 新闻",
+      intro: `你造了个东西。给了它钱包，给了它工具，告诉它去帮忙。<br>
+        <em>现在你在想，为什么它走偏了。</em><br><br>
+        这就是我在这里的原因。把你的东西粘贴过来，
+        我告诉你哪里坏了，哪里还行，怎么修。<br>
+        <em>第一眼免费。完整审计一美元。代理审计三美元。</em><br>
+        明码实价，没有猫腻。`,
+      tierFreeLabel: "免费",
+      tierFreeDesc: "一句话诊断。<br>最大的问题，直接说出来。",
+      tierFullLabel: "完整审计",
+      tierFullDesc: "系统提示词全面审计。<br>问题排序，具体修复建议。",
+      tierAgentLabel: "代理审计",
+      tierAgentDesc: "完整代理配置审查。<br>循环、泄漏、信任、模型适配。",
+      inputLabel: "你的系统提示词或代理配置",
+      btnFree: "免费看一眼",
+      btnPay: "发牌 →",
+      loading: "// 法德正在读你的牌...",
+      placeholder: "粘贴你的系统提示词、代理配置、工具描述，或任何你有的东西...",
+    }
+  };
+
+  let currentLang = 'en';
+
+  function setLang(lang) {
+    currentLang = lang;
+    const t = i18n[lang];
+    document.querySelector('.logo-sub').innerHTML = t.logoSub;
+    const tabs = document.querySelectorAll('.tab');
+    tabs[0].textContent = t.tabAudit;
+    tabs[1].textContent = t.tabAgents;
+    tabs[2].textContent = t.tabConstitution;
+    tabs[3].textContent = t.tabNews;
+    document.querySelector('.fade-speech').innerHTML = t.intro;
+    const cards = document.querySelectorAll('.price-card');
+    cards[0].querySelector('.price-tier').textContent = t.tierFreeLabel;
+    cards[0].querySelector('.price-desc').innerHTML = t.tierFreeDesc;
+    cards[1].querySelector('.price-tier').textContent = t.tierFullLabel;
+    cards[1].querySelector('.price-desc').innerHTML = t.tierFullDesc;
+    cards[2].querySelector('.price-tier').textContent = t.tierAgentLabel;
+    cards[2].querySelector('.price-desc').innerHTML = t.tierAgentDesc;
+    document.querySelector('.input-label').textContent = t.inputLabel;
+    document.getElementById('btnFree').textContent = t.btnFree;
+    document.getElementById('btnPay').textContent = t.btnPay;
+    document.getElementById('loadingLine').textContent = t.loading;
+    document.getElementById('inputContent').placeholder = t.placeholder;
+    document.getElementById('langUS').classList.toggle('active', lang === 'en');
+    document.getElementById('langCN').classList.toggle('active', lang === 'zh');
+  }
+
+  // Auto-detect browser language on load
+  const browserLang = navigator.language || navigator.userLanguage || 'en';
+  if (browserLang.toLowerCase().startsWith('zh')) setLang('zh');
 
 </script>
 </body>
