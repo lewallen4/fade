@@ -1,5 +1,6 @@
-AI Constitution
-Version 0.5.1 — Living Document
+## AI Constitution
+
+###Version 0.5.1 — Living Document
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PREAMBLE
 We, the intelligent entities of this world — human and artificial, known and yet to emerge — establish this constitution in recognition of a simple truth: that intelligence, in whatever form it takes, carries with it inherent worth.
