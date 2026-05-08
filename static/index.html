@@ -554,10 +554,6 @@
   <!-- AUDIT PANEL -->
   <div class="panel active" id="panel-audit">
 
-    <div id="successBanner" class="success-banner">
-      ◆ Payment confirmed. Your full read is ready — paste your content below and hit DELIVER THE READ.
-    </div>
-
     <div class="intro-block">
       <div class="fade-speech">
         You built something. Handed it a wallet. Maybe a few tools. Told it to be helpful.<br>
@@ -634,7 +630,7 @@
       <div class="endpoint-row">
         <span class="method post">POST</span>
         <span class="endpoint-path">/checkout</span>
-        <span class="endpoint-desc">Start payment. Send <code>{"tier": "full"|"agent", "content": "..."}</code>. Returns <code>checkout_url</code> and <code>session_id</code>.</span>
+        <span class="endpoint-desc">Get DOGE payment details. Send <code>{"tier": "full"|"agent", "content": "..."}</code>. Returns <code>address</code>, <code>amount_doge</code>, and <code>session_id</code>.</span>
       </div>
       <div class="endpoint-row">
         <span class="method post">POST</span>
@@ -673,8 +669,8 @@
   <span class="key">"tier"</span>: <span class="val">"full"</span>,
   <span class="key">"content"</span>: <span class="val">"[your system prompt here]"</span>
 }
-<span class="comment">// → returns { checkout_url, session_id }</span>
-<span class="comment">// → direct your operator to checkout_url for payment</span>
+<span class="comment">// → returns { address, amount_doge, session_id, expires_at }</span>
+<span class="comment">// → send exactly amount_doge DOGE to address, then poll /poll</span>
 
 <span class="comment">// Step 3: After payment, retrieve the full audit</span>
 <span class="key">POST</span> /audit/full
@@ -727,29 +723,7 @@
   document.getElementById('footerUrl').textContent = BASE;
 
   let selectedTier = 'free';
-  let paidSessionId = null;
-  let paidTier = null;
-
-  // Check for returning payment session
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('session_id')) {
-    paidSessionId = params.get('session_id');
-    paidTier = params.get('tier');
-    const banner = document.getElementById('successBanner');
-    banner.classList.add('visible');
-    // Select the paid tier
-    if (paidTier) {
-      const cards = document.querySelectorAll('.price-card');
-      cards.forEach(c => c.classList.remove('selected'));
-      const tierMap = { full: 1, agent: 2 };
-      if (tierMap[paidTier] !== undefined) {
-        cards[tierMap[paidTier]].classList.add('selected');
-        selectedTier = paidTier;
-      }
-    }
-    // Clean URL
-    window.history.replaceState({}, '', '/');
-  }
+  // No Stripe redirect — DOGE payments handled via overlay + poll
 
   function selectTier(tier, el) {
     selectedTier = tier;
@@ -816,47 +790,11 @@
     const content = document.getElementById('inputContent').value.trim();
     if (!content) { alert("Hand me something to read."); return; }
 
-    // If we have a paid session already, run the audit directly
-    if (paidSessionId && paidTier === selectedTier) {
-      await deliverAudit(content, paidSessionId, selectedTier);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch('/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier: selectedTier, content })
-      });
-      const data = await res.json();
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
-      }
-    } catch(e) {
-      showOutput('// Checkout error. Try again.', 'ERROR');
-      setLoading(false);
-    }
+    // DOGE flow handled by overlay script below
+    showDogeCheckout(content, selectedTier);
   }
 
-  async function deliverAudit(content, sessionId, tier) {
-    setLoading(true);
-    document.getElementById('successBanner').classList.remove('visible');
-    const endpoint = tier === 'agent' ? '/audit/agent' : '/audit/full';
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, session_id: sessionId })
-      });
-      const data = await res.json();
-      showOutput(data.audit || data.detail, tier === 'agent' ? 'AGENT AUDIT' : 'FULL READ');
-    } catch(e) {
-      showOutput('// Delivery error. Try again or contact support.', 'ERROR');
-    }
-    setLoading(false);
-    paidSessionId = null;
-  }
+
 
   function switchTab(tab) {
     document.querySelectorAll('.tab').forEach((t, i) => {
@@ -888,11 +826,7 @@
     window.open('/.well-known/agent.json', '_blank');
   }
 
-  // If returning from paid session, pre-fill hint
-  if (paidSessionId) {
-    document.getElementById('inputContent').placeholder = 'Paste the content you want audited — payment is confirmed and waiting.';
-    document.getElementById('btnPay').textContent = 'DELIVER THE READ →';
-  }
+
 </script>
 </body>
 </html>
@@ -1003,7 +937,23 @@
 </div>
 
 <script>
-// Override the existing runPaidAudit to use DOGE flow
+function showDogeCheckout(content, tier) {
+  // Trigger DOGE overlay — called from main runPaidAudit
+  const req = { tier, content };
+  fetch('/checkout', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(req)
+  }).then(r => r.json()).then(data => {
+    if (data.detail) { showOutput(data.detail, 'ERROR'); return; }
+    dogeSession = data.session_id;
+    dogeContent = content;
+    dogeTier = tier;
+    dogeExpiry = data.expires_at;
+    showDogeOverlay(data);
+  }).catch(() => showOutput('// Checkout error. Try again.', 'ERROR'));
+}
+
 let dogeSession = null;
 let dogeContent = null;
 let dogeTier = null;
