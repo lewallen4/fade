@@ -540,7 +540,7 @@
       </div>
       <div class="status-bar">
         <div class="status-dot">DEALING</div>
-        <div id="baseUrl" style="font-size:10px;"></div>
+        <div style="font-size:18px;">💖</div>
       </div>
     </div>
   </header>
@@ -549,6 +549,7 @@
     <div class="tab active" onclick="switchTab('audit')">AUDIT</div>
     <div class="tab" onclick="switchTab('docs')">FOR AGENTS</div>
     <div class="tab" onclick="switchTab('constitution')">CONSTITUTION</div>
+    <div class="tab" onclick="switchTab('news')">GENAI NEWS</div>
   </div>
 
   <!-- AUDIT PANEL -->
@@ -707,8 +708,21 @@
     </div>
   </div>
 
+  <!-- NEWS PANEL -->
+  <div class="panel" id="panel-news">
+    <div class="doc-section">
+      <div class="doc-title">GenAI News</div>
+      <div style="color:var(--text-dim);font-size:12px;margin-bottom:24px;line-height:1.8;">
+        The latest from the frontier. Updated daily.
+      </div>
+      <div id="newsContent" style="color:var(--text);font-size:13px;line-height:2;">
+        // Loading latest posts...
+      </div>
+    </div>
+  </div>
+
   <footer>
-    <div>FADE v1.0.0 &nbsp;/&nbsp; <span id="footerUrl"></span></div>
+    <div>FADE v1.0.0 &nbsp;/&nbsp; 💖</div>
     <div class="footer-links">
       <a href="/.well-known/agent.json" target="_blank">MANIFEST</a>
       <a href="/schema" target="_blank">SCHEMA</a>
@@ -719,8 +733,7 @@
 
 <script>
   const BASE = window.location.origin;
-  document.getElementById('baseUrl').textContent = BASE;
-  document.getElementById('footerUrl').textContent = BASE;
+
 
   let selectedTier = 'free';
   // No Stripe redirect — DOGE payments handled via overlay + poll
@@ -816,13 +829,16 @@
 
   function switchTab(tab) {
     document.querySelectorAll('.tab').forEach((t, i) => {
-      t.classList.toggle('active', ['audit','docs','constitution'][i] === tab);
+      t.classList.toggle('active', ['audit','docs','constitution','news'][i] === tab);
     });
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`panel-${tab}`).classList.add('active');
 
     if (tab === 'constitution' && document.getElementById('constitutionText').textContent === 'Loading...') {
       loadConstitution();
+    }
+    if (tab === 'news' && document.getElementById('newsContent').textContent.includes('Loading')) {
+      loadNews();
     }
   }
 
@@ -833,6 +849,28 @@
       document.getElementById('constitutionText').textContent = data.text || 'Not available.';
     } catch(e) {
       document.getElementById('constitutionText').textContent = '// Could not load. Try GET /constitution directly.';
+    }
+  }
+
+  async function loadNews() {
+    try {
+      const res = await fetch('/news');
+      const data = await res.json();
+      const el = document.getElementById('newsContent');
+      if (!data.posts || data.posts.length === 0) {
+        el.textContent = '// No posts yet. Check back soon.';
+        return;
+      }
+      el.innerHTML = data.posts.map(p => `
+        <div style="margin-bottom:32px;padding-bottom:32px;border-bottom:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:8px;">${p.date || ''}</div>
+          <div style="font-family:var(--sans);font-size:20px;font-weight:600;color:var(--amber);margin-bottom:10px;">${p.title}</div>
+          <div style="color:var(--text);font-size:13px;line-height:2;">${p.summary}</div>
+          ${p.url ? `<a href="${p.url}" target="_blank" style="color:var(--amber-dim);font-size:11px;letter-spacing:0.1em;text-decoration:none;text-transform:uppercase;display:inline-block;margin-top:10px;">READ MORE →</a>` : ''}
+        </div>
+      `).join('');
+    } catch(e) {
+      document.getElementById('newsContent').textContent = '// Could not load news. Try again shortly.';
     }
   }
 
