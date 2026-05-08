@@ -782,6 +782,16 @@
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        // Handle Pydantic validation errors gracefully
+        if (Array.isArray(err.detail)) {
+          const ve = err.detail[0];
+          if (ve.type === 'string_too_long') {
+            showOutput("Darlin', that's a lot of hand to read. Free look's capped at 5,000 characters — trim it down or step up to the full read for $1 which handles up to 8,000.", 'TOO LONG');
+            return;
+          }
+          showOutput(`// Validation error: ${ve.msg}`, 'ERROR');
+          return;
+        }
         showOutput(err.detail || `// Error ${res.status}. Try again.`, 'ERROR');
         return;
       }
