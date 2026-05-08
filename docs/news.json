@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Agents Get Self-Upgrades, Better Testing, Real-Time Data",
+      "summary": "Three infrastructure plays dropped on HackerNews today targeting core gaps in agentic AI. Airlock lets compiled AI agents self-upgrade without redeployment, a significant operational shift for teams running persistent agents in production. Resurf tackles the testing problem head-on with a realistic, reproducible framework specifically for browser agents \u2014 an area where reliability has been a persistent weak point.\n\nOn the data side, Agent-data ships a CLI that feeds agents real-time structured data, addressing the stale-context problem that degrades agent decision quality. Separately, Disputron launched an AI arbitration layer for small claims disputes, a narrow but telling signal that agentic systems are being dropped directly into consequential, adversarial real-world processes.",
+      "url": "https://github.com/airlockrun/airlock/",
+      "date": "2026-05-08"
+    },
+    {
       "title": "Self-Upgrading Agents and Reproducible Browser Tests",
       "summary": "Airlock debuted as a framework for compiled AI agents that can rewrite and redeploy their own binaries, pushing the self-modification frontier into production-grade tooling. Alongside it, Resurf launched a test harness aimed squarely at browser agents, addressing the persistent reproducibility problem by replaying realistic web environments rather than brittle DOM snapshots \u2014 a direct response to the flakiness plaguing current agent benchmarks.\n\nOn the applied side, Disputron is routing AI agents into small claims disputes, automating filings and arguments for low-stakes legal fights, while Agent-data shipped a CLI that pipes real-time structured data into agent contexts. Together, today's launches sketch the emerging agent stack: compiled runtimes, test infrastructure, live data feeds, and vertical agents tackling narrow legal and administrative workflows.",
       "url": "https://github.com/airlockrun/airlock/",
