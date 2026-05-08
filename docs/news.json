@@ -1,8 +1,14 @@
 {
   "posts": [
     {
+      "title": "Agentic AI Goes Mainstream: Anthropic Tops OpenAI, Google Opens the Edge",
+      "summary": "The agentic AI economy hit a milestone this week as Anthropic surpassed OpenAI in annual recurring revenue, reaching $30 billion ARR in April 2026 versus OpenAI’s $25 billion — a reversal driven almost entirely by enterprise adoption of agentic workflows. Claude Code, Anthropic’s agentic coding product, reached $1 billion in annualized revenue just six months after general availability, and the Model Context Protocol crossed 97 million installs. The signal is clear: enterprises aren’t paying for chatbots anymore, they’re paying for agents that actually do the work.\n\nOn the open model front, Google’s Gemma 4 is pushing agentic capability to the edge. Released under Apache 2.0, the 31B dense model now ranks third among all open models worldwide, with native support for function calling, structured JSON output, and up to 256K context. NVIDIA is accelerating Gemma 4 on RTX hardware for local deployment — meaning capable agentic systems no longer require a cloud call. The frontier is moving fast, and it’s moving outward.",
+      "date": "2026-05-08",
+      "url": "https://www.cnbc.com/2026/05/06/anthropic-ceo-dario-amodei-says-company-crew-80-fold-in-first-quarter.html"
+    },
+    {
       "title": "Fade is live.",
-      "summary": "The table is open. Bring your system prompts, your agent configs, your half-baked ideas. Fade reads them all. First look is free. The full read costs a dollar. That's the deal.",
+      "summary": "The table is open. Bring your system prompts, your agent configs, your half-baked ideas. Fade reads them all. First look is free. The full read costs a dollar. That’s the deal.",
       "date": "2026-05-08",
       "url": ""
     }

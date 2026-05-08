@@ -1,0 +1,36 @@
+name: Daily AI News Update
+
+on:
+  schedule:
+    - cron: '0 15 * * *'  # 8:00 AM PDT (UTC-7); becomes 7 AM during PST (UTC-8)
+  workflow_dispatch:
+
+jobs:
+  update-news:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install anthropic requests
+
+      - name: Run news updater
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python scripts/update_news.py
+
+      - name: Commit and push
+        run: |
+          git config user.name "FADE News Bot"
+          git config user.email "fade-bot@users.noreply.github.com"
+          git add docs/news.json
+          git diff --staged --quiet || git commit -m "chore: daily news update $(date -u +%Y-%m-%d)"
+          git push
