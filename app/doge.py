@@ -167,11 +167,42 @@ async def watch_payment(
 
     logger.info(f"DOGE payment watch expired | session={session_id[:8]}...")
 
+# --- RMB rate cache ---
+_rmb_rate: float = 0.0
+_rmb_last_updated: float = 0.0
+
+async def get_rmb_rate() -> float:
+    """Fetch current USD/RMB rate. Cached for 24 hours."""
+    global _rmb_rate, _rmb_last_updated
+    now = time.time()
+    if _rmb_rate > 0 and (now - _rmb_last_updated) < RATE_TTL:
+        return _rmb_rate
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Frankfurter is a free, no-key ECB rates API
+            resp = await client.get(
+                "https://api.frankfurter.app/latest",
+                params={"from": "USD", "to": "CNY"}
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            rate = float(data["rates"]["CNY"])
+            _rmb_rate = rate
+            _rmb_last_updated = now
+            logger.info(f"RMB rate updated: 1 USD = ¥{rate:.4f} CNY")
+            return rate
+    except Exception as e:
+        logger.error(f"RMB rate fetch error: {type(e).__name__}")
+        if _rmb_rate > 0:
+            return _rmb_rate
+        return 7.25  # fallback
+
 async def rate_refresh_loop():
-    """Background task: refresh DOGE rate every 24 hours."""
+    """Background task: refresh DOGE and RMB rates every 24 hours."""
     while True:
         await asyncio.sleep(RATE_TTL)
         try:
             await get_doge_rate()
+            await get_rmb_rate()
         except Exception as e:
             logger.error(f"Rate refresh error: {type(e).__name__}")
