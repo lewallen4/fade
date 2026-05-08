@@ -604,8 +604,7 @@
     <textarea id="inputContent" placeholder="Paste your system prompt, agent configuration, tool descriptions, or whatever you've got...&#10;&#10;// If you're an agent: POST to /audit/free with {&quot;content&quot;: &quot;...&quot;} — no payment needed for the taste."></textarea>
 
     <div class="btn-row">
-      <button class="btn btn-free" onclick="runFreeAudit()" id="btnFree">FREE LOOK</button>
-      <button class="btn btn-primary" onclick="runPaidAudit()" id="btnPay">DEAL THE HAND →</button>
+      <button class="btn btn-primary" onclick="runPaidAudit()" id="btnPay">FREE LOOK →</button>
     </div>
 
     <div class="loading-line" id="loadingLine">// Fade is reading your hand...</div>
@@ -768,19 +767,19 @@
     document.querySelectorAll('.price-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
 
+    const t = i18n[currentLang];
     const btnPay = document.getElementById('btnPay');
     if (tier === 'free') {
-      btnPay.textContent = 'FREE LOOK →';
+      btnPay.textContent = t ? t.btnFree : 'FREE LOOK →';
     } else if (tier === 'full') {
-      btnPay.textContent = 'DEAL THE HAND — $1 →';
+      btnPay.textContent = currentLang === 'zh' ? '发牌 — $1 →' : 'DEAL THE HAND — $1 →';
     } else {
-      btnPay.textContent = 'FULL AUDIT — $3 →';
+      btnPay.textContent = currentLang === 'zh' ? '完整审计 — $3 →' : 'FULL AUDIT — $3 →';
     }
   }
 
   function setLoading(on) {
     document.getElementById('loadingLine').classList.toggle('visible', on);
-    document.getElementById('btnFree').disabled = on;
     document.getElementById('btnPay').disabled = on;
   }
 
@@ -983,8 +982,11 @@
     cards[2].querySelector('.price-tier').textContent = t.tierAgentLabel;
     cards[2].querySelector('.price-desc').innerHTML = t.tierAgentDesc;
     document.querySelector('.input-label').textContent = t.inputLabel;
-    document.getElementById('btnFree').textContent = t.btnFree;
-    document.getElementById('btnPay').textContent = t.btnPay;
+    // Update single button based on selected tier
+    const activeTier = selectedTier || 'free';
+    if (activeTier === 'free') document.getElementById('btnPay').textContent = t.btnFree;
+    else if (activeTier === 'full') document.getElementById('btnPay').textContent = lang === 'zh' ? '发牌 — $1 →' : 'DEAL THE HAND — $1 →';
+    else document.getElementById('btnPay').textContent = lang === 'zh' ? '完整审计 — $3 →' : 'FULL AUDIT — $3 →';
     document.getElementById('loadingLine').textContent = t.loading;
     document.getElementById('inputContent').placeholder = t.placeholder;
     document.getElementById('langUS').classList.toggle('active', lang === 'en');
@@ -995,9 +997,44 @@
     if (disclaimer) disclaimer.style.display = lang === 'zh' ? 'block' : 'none';
   }
 
+  // Fetch RMB prices and cache them
+  let rmbPrices = { full: null, agent: null };
+
+  async function fetchRmbPrices() {
+    try {
+      const res = await fetch('/rate');
+      const data = await res.json();
+      rmbPrices.full  = data.full_audit_rmb;
+      rmbPrices.agent = data.agent_audit_rmb;
+    } catch(e) {}
+  }
+
+  function updatePriceDisplays(lang) {
+    const fullAmountEl  = document.querySelector('.price-card:nth-child(2) .price-amount');
+    const agentAmountEl = document.querySelector('.price-card:nth-child(3) .price-amount');
+    if (!fullAmountEl || !agentAmountEl) return;
+
+    if (lang === 'zh' && rmbPrices.full) {
+      fullAmountEl.textContent  = `¥${rmbPrices.full.toFixed(2)}`;
+      agentAmountEl.textContent = `¥${rmbPrices.agent.toFixed(2)}`;
+    } else {
+      fullAmountEl.textContent  = '$1';
+      agentAmountEl.textContent = '$3';
+    }
+  }
+
+  // Patch setLang to also update prices
+  const _origSetLang = setLang;
+  setLang = function(lang) {
+    _origSetLang(lang);
+    updatePriceDisplays(lang);
+  };
+
   // Auto-detect browser language on load
-  const browserLang = navigator.language || navigator.userLanguage || 'en';
-  if (browserLang.toLowerCase().startsWith('zh')) setLang('zh');
+  fetchRmbPrices().then(() => {
+    const browserLang = navigator.language || navigator.userLanguage || 'en';
+    if (browserLang.toLowerCase().startsWith('zh')) setLang('zh');
+  });
 
 </script>
 </body>
