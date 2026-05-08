@@ -739,6 +739,10 @@
 
   <footer>
     <div>FADE v1.0.0 &nbsp;/&nbsp; 💖</div>
+    <div id="cnDisclaimer" style="display:none;font-size:10px;color:var(--text-dim);text-align:center;letter-spacing:0.05em;padding:8px 0;">
+      本中文版仅供参考。如有歧义，以英文版本为准。
+      <a href="javascript:void(0)" onclick="setLang('en')" style="color:var(--amber-dim);text-decoration:none;margin-left:6px;">查看英文版 →</a>
+    </div>
     <div class="lang-toggle">
       <span id="langUS" class="lang-btn active" onclick="setLang('en')">🇺🇸 EN</span>
       <span style="color:var(--border)">|</span>
@@ -937,7 +941,7 @@
       logoSub: "AI 代理审计员 &nbsp;/&nbsp; 提示词诊断 &nbsp;/&nbsp; 真相价值一美元",
       tabAudit: "审计",
       tabAgents: "面向代理",
-      tabConstitution: "AI 宪法",
+      tabConstitution: "AI 伦理宪章",
       tabNews: "GenAI 新闻",
       intro: `你造了个东西。给了它钱包，给了它工具，告诉它要有用。<br>
         <em>现在你在想，为什么它偏了。</em><br><br>
@@ -985,6 +989,10 @@
     document.getElementById('inputContent').placeholder = t.placeholder;
     document.getElementById('langUS').classList.toggle('active', lang === 'en');
     document.getElementById('langCN').classList.toggle('active', lang === 'zh');
+
+    // Show/hide CN disclaimer
+    const disclaimer = document.getElementById('cnDisclaimer');
+    if (disclaimer) disclaimer.style.display = lang === 'zh' ? 'block' : 'none';
   }
 
   // Auto-detect browser language on load
