@@ -118,7 +118,7 @@ app.add_middleware(
 # =============================================================================
 
 OPENROUTER_API_KEY   = os.environ.get("OPENROUTER_API_KEY", "")
-OPENROUTER_FREE_MODEL = os.environ.get("OPENROUTER_FREE_MODEL", "nvidia/llama-3.1-nemotron-ultra-253b-v1:free")
+OPENROUTER_FREE_MODEL = os.environ.get("OPENROUTER_FREE_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
 OPENROUTER_URL       = "https://openrouter.ai/api/v1/chat/completions"
 
 @app.on_event("startup")
