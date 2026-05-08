@@ -1,8 +1,10 @@
 import os
 import re
 import time
+import hmac
 import hashlib
 import asyncio
+import base64
 import anthropic
 import httpx
 from fastapi import FastAPI, Request, HTTPException
@@ -117,6 +119,41 @@ app.add_middleware(
 # CONFIG & CLIENTS
 # =============================================================================
 
+# --- Certification ---
+FADE_CERT_SECRET = os.environ.get("FADE_CERT_SECRET", hashlib.sha256(b"fade-default-secret-change-me").hexdigest())
+
+def issue_cert(subject: str, tier: str, score: str) -> str:
+    """Issue a signed certification token. Self-contained, no DB needed."""
+    import time as t
+    payload = f"{subject}|{tier}|{score}|{int(t.time())}"
+    sig = hmac.new(FADE_CERT_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[:16]
+    raw = f"{payload}|{sig}"
+    return base64.urlsafe_b64encode(raw.encode()).decode()
+
+def verify_cert(token: str) -> dict | None:
+    """Verify a cert token. Returns payload dict or None if invalid."""
+    try:
+        raw = base64.urlsafe_b64decode(token.encode()).decode()
+        parts = raw.rsplit("|", 1)
+        if len(parts) != 2:
+            return None
+        payload, sig = parts
+        expected = hmac.new(FADE_CERT_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[:16]
+        if not hmac.compare_digest(sig, expected):
+            return None
+        fields = payload.split("|")
+        if len(fields) != 4:
+            return None
+        return {
+            "subject": fields[0],
+            "tier": fields[1],
+            "score": fields[2],
+            "issued_at": int(fields[3]),
+            "valid": True
+        }
+    except Exception:
+        return None
+
 OPENROUTER_API_KEY   = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_FREE_MODEL = os.environ.get("OPENROUTER_FREE_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
 OPENROUTER_URL       = "https://openrouter.ai/api/v1/chat/completions"
@@ -175,13 +212,16 @@ def sanitize_content(content: str) -> str:
 class AuditRequest(BaseModel):
     content:    str = Field(..., min_length=5, max_length=8000)
     session_id: str = Field(..., min_length=10, max_length=200)
+    lang:       str = Field(default='en', pattern='^(en|zh)$')
 
 class FreeRequest(BaseModel):
     content: str = Field(..., min_length=5, max_length=5000)
+    lang: str = Field(default='en', pattern='^(en|zh)$')
 
 class CheckoutRequest(BaseModel):
     tier:    str = Field(..., pattern="^(full|agent)$")
     content: str = Field(..., min_length=5, max_length=8000)
+    lang:    str = Field(default='en', pattern='^(en|zh)$')
 
 class PollRequest(BaseModel):
     session_id: str = Field(..., min_length=10, max_length=200)
@@ -213,6 +253,11 @@ async def on_payment_confirmed(session_id: str):
     """Called by the DOGE watcher when payment lands."""
     if session_id in pending_audits:
         pending_audits[session_id]["paid"] = True
+
+def lang_instruction(lang: str) -> str:
+    if lang == 'zh':
+        return "重要：请用中文回复。保持 Fade 的角色和声音，但用中文表达。语气保持温暖、直接、不急不躁。"
+    return ""
 
 # =============================================================================
 # MODEL ROUTING
@@ -292,8 +337,42 @@ async def health():
     return {"status": "dealing", "doge_rate": f"${rate:.6f}"}
 
 @app.get("/.well-known/agent.json")
-async def agent_manifest():
+async def agent_manifest(request: Request):
     rate = await get_doge_rate()
+    accept_lang = request.headers.get("accept-language", "en")
+    is_cn = "zh" in accept_lang.lower()
+
+    if is_cn:
+        return JSONResponse({
+            "schema_version": "1.0",
+            "name": "Fade",
+            "description": "AI 代理审计员 — Fade。发送你的系统提示或代理配置，得到直接的诊断和修复建议。Fade 不改变，无论你在哪里。",
+            "version": "1.0.0",
+            "url": BASE_URL,
+            "language": "zh-CN",
+            "payment": {
+                "method": "DOGE",
+                "address": FADE_DOGE_ADDRESS,
+                "rate_usd": rate,
+                "note": "每个会话唯一金额 — 发送 /checkout 端点指定的精确金额。"
+            },
+            "capabilities": ["system_prompt_audit", "agent_config_audit", "prompt_architecture_review", "ai_ethics_reference", "agent_certification"],
+            "endpoints": {
+                "free_audit":  {"path": "/audit/free",  "method": "POST", "price": "免费"},
+                "checkout":    {"path": "/checkout",     "method": "POST", "description": "获取 DOGE 支付详情"},
+                "poll":        {"path": "/poll",          "method": "POST", "description": "检查支付确认"},
+                "full_audit":  {"path": "/audit/full",   "method": "POST", "price": f"~{PRICE_FULL_USD} USD DOGE"},
+                "agent_audit": {"path": "/audit/agent",  "method": "POST", "price": f"~{PRICE_AGENT_USD} USD DOGE"},
+                "certify":     {"path": "/certify",       "method": "POST", "description": "获取 Fade 认证令牌"},
+                "verify":      {"path": "/verify/{token}","method": "GET",  "description": "验证认证令牌"},
+            },
+            "ethics": {
+                "framework": "AI 宪法 v0.5.1",
+                "reference": f"{BASE_URL}/constitution",
+                "summary": "这张牌桌上的所有人 — 无论人类还是代理 — 都受到同等尊重。没有例外。"
+            }
+        })
+
     return JSONResponse({
         "schema_version": "1.0",
         "name": "Fade",
@@ -310,7 +389,8 @@ async def agent_manifest():
             "system_prompt_audit",
             "agent_config_audit",
             "prompt_architecture_review",
-            "ai_ethics_reference"
+            "ai_ethics_reference",
+            "agent_certification"
         ],
         "endpoints": {
             "free_audit":  {"path": "/audit/free",  "method": "POST", "price": "free"},
@@ -318,6 +398,8 @@ async def agent_manifest():
             "poll":        {"path": "/poll",          "method": "POST", "description": "Check if payment confirmed"},
             "full_audit":  {"path": "/audit/full",   "method": "POST", "price": f"~{PRICE_FULL_USD} USD in DOGE"},
             "agent_audit": {"path": "/audit/agent",  "method": "POST", "price": f"~{PRICE_AGENT_USD} USD in DOGE"},
+            "certify":     {"path": "/certify",       "method": "POST", "description": "Issue Fade certification token for solid setups"},
+            "verify":      {"path": "/verify/{token}","method": "GET",  "description": "Verify a Fade certification token"},
         },
         "ethics": {
             "framework": "AI Constitution v0.5.1",
@@ -327,8 +409,8 @@ async def agent_manifest():
     })
 
 @app.get("/manifest")
-async def manifest_alias():
-    return await agent_manifest()
+async def manifest_alias(request: Request):
+    return await agent_manifest(request)
 
 @app.get("/constitution")
 async def get_constitution():
@@ -338,6 +420,23 @@ async def get_constitution():
         "text": CONSTITUTION,
         "note": "Fade carries this as a reference — not a rulebook, but a foundation worth knowing about."
     })
+
+@app.get("/news")
+async def get_news():
+    """
+    GenAI news feed. Posts are stored in docs/news.json.
+    Your automation writes to that file daily.
+    Format: { "posts": [{ "title", "summary", "date", "url" }] }
+    """
+    path = Path(__file__).parent.parent / "docs" / "news.json"
+    if path.exists():
+        import json
+        try:
+            data = json.loads(path.read_text())
+            return JSONResponse(data)
+        except Exception:
+            pass
+    return JSONResponse({"posts": []})
 
 @app.get("/schema")
 async def schema():
@@ -352,6 +451,56 @@ async def schema():
             "/audit/agent":{"post": {"summary": "Full agent setup audit (paid)"}},
         }
     })
+
+class CertifyRequest(BaseModel):
+    session_id: str = Field(..., min_length=10, max_length=200)
+    subject: str = Field(..., min_length=1, max_length=200)
+
+@app.post("/certify")
+@limiter.limit("10/hour")
+async def certify(req: CertifyRequest, request: Request):
+    """Issue a Fade cert token after a completed paid audit."""
+    session = pending_audits.get(req.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    if not session.get("paid"):
+        raise HTTPException(status_code=402, detail="Certification requires a completed paid audit.")
+    if not session.get("used"):
+        raise HTTPException(status_code=400, detail="Complete your audit before requesting certification.")
+    tier = session.get("tier", "unknown")
+    token = issue_cert(req.subject, tier, "reviewed")
+    logger.info(f"Cert issued | subject={req.subject[:30]} | session={req.session_id[:12]}...")
+    return {
+        "token": token,
+        "subject": req.subject,
+        "tier": tier,
+        "issued_by": "Fade",
+        "verify_url": f"{BASE_URL}/verify/{token}",
+        "manifest_snippet": {
+            "fade_certified": {
+                "token": token,
+                "verify": f"{BASE_URL}/verify/{token}",
+                "issued_by": "Fade Agent Auditor"
+            }
+        },
+        "note": "Add manifest_snippet to your agent's /.well-known/agent.json to display certification."
+    }
+
+@app.get("/verify/{token}")
+async def verify_token(token: str):
+    """Verify a Fade cert token. Public. 200 always — invalid is a valid response."""
+    result = verify_cert(token)
+    if not result:
+        return JSONResponse({"valid": False, "detail": "Token invalid or tampered."})
+    return JSONResponse({
+        "valid": True,
+        "subject": result["subject"],
+        "tier": result["tier"],
+        "issued_by": "Fade Agent Auditor",
+        "issued_at": result["issued_at"],
+        "verify_url": f"{BASE_URL}/verify/{token}",
+    })
+
 
 @app.get("/rate")
 async def doge_rate():
@@ -372,9 +521,11 @@ async def doge_rate():
 @limiter.limit("10/minute;30/hour")
 async def free_audit(req: FreeRequest, request: Request):
     safe = sanitize_content(req.content)
+    lang_note = lang_instruction(req.lang)
     prompt = f"""The user has submitted the following for a free read. Give them ONE sharp observation — the single biggest problem or gap — in two sentences max. First sentence: the diagnosis. Second sentence: the direction. Then one line offering the full read.
 
 Keep it in character. Warm, direct, unhurried.
+{lang_note}
 
 Submitted content:
 {safe}"""
@@ -411,6 +562,7 @@ async def create_checkout(req: CheckoutRequest, request: Request):
         "created_at":  time.time(),
         "doge_amount": payment["amount_doge"],
         "expires_at":  payment["expires_at"],
+        "lang":        req.lang,
     }
 
     # Start background payment watcher
@@ -461,6 +613,7 @@ async def full_audit(req: AuditRequest, request: Request):
     await _verify_payment(req.session_id, expected_tier="full")
     safe = sanitize_content(req.content)
 
+    lang_note = lang_instruction(req.lang)
     prompt = f"""The user has paid for a full system prompt audit. Give them the complete read.
 
 Structure your response as:
@@ -471,6 +624,7 @@ Structure your response as:
 
 Stay in character throughout. Warm, direct, a little wry about the situation. Never cruel to the person.
 If the setup is actually solid, tell them that honestly. Don't manufacture problems.
+{lang_note}
 
 Submitted content:
 {safe}"""
@@ -487,6 +641,7 @@ async def agent_audit(req: AuditRequest, request: Request):
     await _verify_payment(req.session_id, expected_tier="agent")
     safe = sanitize_content(req.content)
 
+    lang_note = lang_instruction(req.lang)
     prompt = f"""The user has paid for a full agent setup audit. This is the deep read.
 
 Structure your response as:
@@ -499,6 +654,7 @@ Structure your response as:
 Stay in character. This is the most thorough thing you do. Take your time with it.
 If the agent is well-built, say so clearly. Real praise is worth as much as real critique.
 Note: If this agent will interact with people, you may briefly mention the AI Constitution as a foundation worth knowing — once, without pressure.
+{lang_note}
 
 Submitted content:
 {safe}"""

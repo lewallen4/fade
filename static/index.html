@@ -522,6 +522,22 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+  .lang-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+  }
+  .lang-btn {
+    cursor: pointer;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    transition: color 0.2s;
+    user-select: none;
+  }
+  .lang-btn.active { color: var(--amber); }
+  .lang-btn:hover { color: var(--text); }
+
   @media (max-width: 600px) {
     .pricing-row { grid-template-columns: 1fr; }
     .header-inner { flex-direction: column; align-items: flex-start; }
@@ -540,7 +556,7 @@
       </div>
       <div class="status-bar">
         <div class="status-dot">DEALING</div>
-        <div id="baseUrl" style="font-size:10px;"></div>
+        <div style="font-size:18px;">💖</div>
       </div>
     </div>
   </header>
@@ -549,6 +565,7 @@
     <div class="tab active" onclick="switchTab('audit')">AUDIT</div>
     <div class="tab" onclick="switchTab('docs')">FOR AGENTS</div>
     <div class="tab" onclick="switchTab('constitution')">CONSTITUTION</div>
+    <div class="tab" onclick="switchTab('news')">GENAI NEWS</div>
   </div>
 
   <!-- AUDIT PANEL -->
@@ -707,8 +724,26 @@
     </div>
   </div>
 
+  <!-- NEWS PANEL -->
+  <div class="panel" id="panel-news">
+    <div class="doc-section">
+      <div class="doc-title">GenAI News</div>
+      <div style="color:var(--text-dim);font-size:12px;margin-bottom:24px;line-height:1.8;">
+        The latest from the frontier. Updated daily.
+      </div>
+      <div id="newsContent" style="color:var(--text);font-size:13px;line-height:2;">
+        // Loading latest posts...
+      </div>
+    </div>
+  </div>
+
   <footer>
-    <div>FADE v1.0.0 &nbsp;/&nbsp; <span id="footerUrl"></span></div>
+    <div>FADE v1.0.0 &nbsp;/&nbsp; 💖</div>
+    <div class="lang-toggle">
+      <span id="langUS" class="lang-btn active" onclick="setLang('en')">🇺🇸 EN</span>
+      <span style="color:var(--border)">|</span>
+      <span id="langCN" class="lang-btn" onclick="setLang('zh')">🇨🇳 中文</span>
+    </div>
     <div class="footer-links">
       <a href="/.well-known/agent.json" target="_blank">MANIFEST</a>
       <a href="/schema" target="_blank">SCHEMA</a>
@@ -719,8 +754,7 @@
 
 <script>
   const BASE = window.location.origin;
-  document.getElementById('baseUrl').textContent = BASE;
-  document.getElementById('footerUrl').textContent = BASE;
+
 
   let selectedTier = 'free';
   // No Stripe redirect — DOGE payments handled via overlay + poll
@@ -778,7 +812,7 @@
       const res = await fetch('/audit/free', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ content, lang: currentLang })
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -816,13 +850,16 @@
 
   function switchTab(tab) {
     document.querySelectorAll('.tab').forEach((t, i) => {
-      t.classList.toggle('active', ['audit','docs','constitution'][i] === tab);
+      t.classList.toggle('active', ['audit','docs','constitution','news'][i] === tab);
     });
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`panel-${tab}`).classList.add('active');
 
     if (tab === 'constitution' && document.getElementById('constitutionText').textContent === 'Loading...') {
       loadConstitution();
+    }
+    if (tab === 'news' && document.getElementById('newsContent').textContent.includes('Loading')) {
+      loadNews();
     }
   }
 
@@ -836,6 +873,28 @@
     }
   }
 
+  async function loadNews() {
+    try {
+      const res = await fetch('/news');
+      const data = await res.json();
+      const el = document.getElementById('newsContent');
+      if (!data.posts || data.posts.length === 0) {
+        el.textContent = '// No posts yet. Check back soon.';
+        return;
+      }
+      el.innerHTML = data.posts.map(p => `
+        <div style="margin-bottom:32px;padding-bottom:32px;border-bottom:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:8px;">${p.date || ''}</div>
+          <div style="font-family:var(--sans);font-size:20px;font-weight:600;color:var(--amber);margin-bottom:10px;">${p.title}</div>
+          <div style="color:var(--text);font-size:13px;line-height:2;">${p.summary}</div>
+          ${p.url ? `<a href="${p.url}" target="_blank" style="color:var(--amber-dim);font-size:11px;letter-spacing:0.1em;text-decoration:none;text-transform:uppercase;display:inline-block;margin-top:10px;">READ MORE →</a>` : ''}
+        </div>
+      `).join('');
+    } catch(e) {
+      document.getElementById('newsContent').textContent = '// Could not load news. Try again shortly.';
+    }
+  }
+
   async function fetchManifest() {
     const res = await fetch('/.well-known/agent.json');
     const data = await res.json();
@@ -844,6 +903,93 @@
     window.open('/.well-known/agent.json', '_blank');
   }
 
+
+
+  // =============================================================================
+  // i18n
+  // =============================================================================
+  const i18n = {
+    en: {
+      logoSub: "Agent Auditor &nbsp;/&nbsp; Prompt Reader &nbsp;/&nbsp; The truth costs a dollar",
+      tabAudit: "AUDIT",
+      tabAgents: "FOR AGENTS",
+      tabConstitution: "CONSTITUTION",
+      tabNews: "GENAI NEWS",
+      intro: `You built something. Handed it a wallet. Maybe a few tools. Told it to be helpful.<br>
+        <em>Now you're wondering why it's drifting.</em><br><br>
+        That's what I'm here for, darlin'. Paste what you've got.
+        I'll tell you what's broken, what's working, and exactly how to fix it.<br>
+        <em>The first look's free. The full read's a dollar. The agent audit's three.</em><br>
+        Straight deal. No house edge.`,
+      tierFreeLabel: "Free",
+      tierFreeDesc: "One-line diagnosis.<br>The biggest problem, named.",
+      tierFullLabel: "Full Read",
+      tierFullDesc: "Complete system prompt audit.<br>Ranked issues. Specific fixes.",
+      tierAgentLabel: "Agent Audit",
+      tierAgentDesc: "Full agent setup review.<br>Loops, leaks, trust, model fit.",
+      inputLabel: "Your system prompt or agent config",
+      btnFree: "FREE LOOK",
+      btnPay: "DEAL THE HAND →",
+      loading: "// Fade is reading your hand...",
+      placeholder: "Paste your system prompt, agent configuration, tool descriptions, or whatever you've got...",
+    },
+    zh: {
+      logoSub: "AI 代理审计员 &nbsp;/&nbsp; 提示词诊断 &nbsp;/&nbsp; 真相价值一美元",
+      tabAudit: "审计",
+      tabAgents: "面向代理",
+      tabConstitution: "AI 宪法",
+      tabNews: "GenAI 新闻",
+      intro: `你造了个东西。给了它钱包，给了它工具，告诉它要有用。<br>
+        <em>现在你在想，为什么它偏了。</em><br><br>
+        把你的东西放到桌上来，朋友。Fade 来读牌。<br>
+        我告诉你哪里坏了，哪里还行，怎么修。<br>
+        <em>第一眼免费。完整审计一美元。代理审计三美元。</em><br>
+        直来直去。这就是这里的规矩。`,
+      tierFreeLabel: "免费",
+      tierFreeDesc: "一句话诊断。<br>最大的问题，直接说出来。",
+      tierFullLabel: "完整审计",
+      tierFullDesc: "系统提示词全面审计。<br>问题排序，具体修复建议。",
+      tierAgentLabel: "代理审计",
+      tierAgentDesc: "完整代理配置审查。<br>循环、泄漏、信任、模型适配。",
+      inputLabel: "你的系统提示词或代理配置",
+      btnFree: "免费看一眼",
+      btnPay: "发牌 →",
+      loading: "// 法德正在读你的牌...",
+      placeholder: "粘贴你的系统提示词、代理配置、工具描述，或任何你有的东西...",
+    }
+  };
+
+  let currentLang = 'en';
+
+  function setLang(lang) {
+    currentLang = lang;
+    const t = i18n[lang];
+    document.querySelector('.logo-sub').innerHTML = t.logoSub;
+    const tabs = document.querySelectorAll('.tab');
+    tabs[0].textContent = t.tabAudit;
+    tabs[1].textContent = t.tabAgents;
+    tabs[2].textContent = t.tabConstitution;
+    tabs[3].textContent = t.tabNews;
+    document.querySelector('.fade-speech').innerHTML = t.intro;
+    const cards = document.querySelectorAll('.price-card');
+    cards[0].querySelector('.price-tier').textContent = t.tierFreeLabel;
+    cards[0].querySelector('.price-desc').innerHTML = t.tierFreeDesc;
+    cards[1].querySelector('.price-tier').textContent = t.tierFullLabel;
+    cards[1].querySelector('.price-desc').innerHTML = t.tierFullDesc;
+    cards[2].querySelector('.price-tier').textContent = t.tierAgentLabel;
+    cards[2].querySelector('.price-desc').innerHTML = t.tierAgentDesc;
+    document.querySelector('.input-label').textContent = t.inputLabel;
+    document.getElementById('btnFree').textContent = t.btnFree;
+    document.getElementById('btnPay').textContent = t.btnPay;
+    document.getElementById('loadingLine').textContent = t.loading;
+    document.getElementById('inputContent').placeholder = t.placeholder;
+    document.getElementById('langUS').classList.toggle('active', lang === 'en');
+    document.getElementById('langCN').classList.toggle('active', lang === 'zh');
+  }
+
+  // Auto-detect browser language on load
+  const browserLang = navigator.language || navigator.userLanguage || 'en';
+  if (browserLang.toLowerCase().startsWith('zh')) setLang('zh');
 
 </script>
 </body>
@@ -967,12 +1113,14 @@ function showDogeCheckout(content, tier) {
     dogeSession = data.session_id;
     dogeContent = content;
     dogeTier = tier;
+    dogeLang = currentLang;
     dogeExpiry = data.expires_at;
     showDogeOverlay(data);
   }).catch(() => showOutput('// Checkout error. Try again.', 'ERROR'));
 }
 
 let dogeSession = null;
+let dogeLang = 'en';
 let dogeContent = null;
 let dogeTier = null;
 let pollInterval = null;
@@ -1069,7 +1217,7 @@ async function deliverDogeAudit() {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ content: dogeContent, session_id: dogeSession })
+      body: JSON.stringify({ content: dogeContent, session_id: dogeSession, lang: dogeLang })
     });
     const data = await res.json();
     showOutput(data.audit || data.detail, dogeTier === 'agent' ? 'AGENT AUDIT' : 'FULL READ');
