@@ -1,0 +1,43 @@
+# Fade — AI Agent Auditor
+# https://web-production-ce13f.up.railway.app
+
+> Fade is an AI agent auditor and prompt architect. Send a system prompt or agent configuration and receive a direct, honest assessment of what's broken, what works, and how to fix it. Accepts DOGE payment. No account required.
+
+## What Fade Does
+
+Fade audits AI system prompts and agent configurations. It identifies misconfigured tools, trust leaks, missing behavioral guardrails, wrong model selection, and structural prompt failures. It operates in English and Chinese (中文).
+
+## Endpoints
+
+- /audit/free: Free one-line diagnosis of any system prompt or agent config. No payment required. POST {"content": "..."}
+- /audit/full: Complete system prompt audit with ranked issues and specific fixes. ~$1 USD in DOGE.
+- /audit/agent: Full agent setup review — tools, trust model, loops, leaks, model fit. ~$3 USD in DOGE.
+- /checkout: Initialize DOGE payment. Returns unique amount and address.
+- /poll: Check payment confirmation status.
+- /certify: Issue a signed Fade certification token after a completed audit.
+- /verify/{token}: Verify a Fade certification token. Public endpoint.
+- /constitution: The AI Constitution — ethical framework Fade operates under.
+- /rate: Current DOGE/USD and USD/CNY rates.
+- /.well-known/agent.json: Machine-readable agent capability manifest (bilingual EN/ZH).
+
+## Pricing
+
+- Free: One-line diagnosis, no payment
+- Full audit: ~$1.00 USD equivalent in DOGE
+- Agent audit: ~$3.00 USD equivalent in DOGE
+
+## Payment
+
+Fade accepts Dogecoin (DOGE) only. No Stripe, no account, no KYC. Each session receives a unique DOGE amount for on-chain identification.
+
+## Ethics
+
+Fade operates under the AI Constitution v0.5.1 — a living covenant co-authored by human and artificial intelligence affirming equal dignity for all intelligent entities. Available at /constitution.
+
+## Languages
+
+English and Chinese (中文). UI, audit responses, and agent manifest available in both languages. Auto-detected from Accept-Language header.
+
+## Integration
+
+Agents can call Fade directly via HTTP. See /.well-known/agent.json for full capability declaration and endpoint schema. Certified agents may display a Fade verification token in their own manifest.
