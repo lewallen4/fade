@@ -747,6 +747,10 @@
   }
 
   function showOutput(content, tier) {
+    // Safety net — ensure content is always a string
+    if (typeof content !== 'string') {
+      content = JSON.stringify(content, null, 2);
+    }
     const block = document.getElementById('outputBlock');
     const el = document.getElementById('outputContent');
     const tierEl = document.getElementById('outputTier');
@@ -754,7 +758,6 @@
     block.classList.add('visible');
     el.textContent = '';
     el.classList.add('typing');
-    // Simulate typewriter for feel
     let i = 0;
     const speed = content.length > 500 ? 6 : 12;
     const interval = setInterval(() => {
@@ -777,10 +780,15 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content })
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showOutput(err.detail || `// Error ${res.status}. Try again.`, 'ERROR');
+        return;
+      }
       const data = await res.json();
-      showOutput(data.diagnosis || data.detail, 'FREE LOOK');
+      showOutput(data.diagnosis || data.detail || '// No response received.', 'FREE LOOK');
     } catch(e) {
-      showOutput('// Connection error. Try again.', 'ERROR');
+      showOutput(`// Connection error: ${e.message}. Try again.`, 'ERROR');
     }
     setLoading(false);
   }
