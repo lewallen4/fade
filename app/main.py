@@ -361,6 +361,27 @@ def call_fade_paid(user_message: str, max_tokens: int = 1500) -> str:
 async def root():
     return FileResponse(Path(__file__).parent.parent / "static" / "index.html")
 
+@app.get("/llms.txt")
+async def llms_txt():
+    path = Path(__file__).parent.parent / "static" / "llms.txt"
+    return FileResponse(path, media_type="text/plain")
+
+@app.get("/robots.txt")
+async def robots_txt():
+    path = Path(__file__).parent.parent / "static" / "robots.txt"
+    return FileResponse(path, media_type="text/plain")
+
+@app.get("/sitemap.xml")
+async def sitemap():
+    urls = ["", "/constitution", "/schema", "/.well-known/agent.json", "/rate", "/llms.txt"]
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for p in urls:
+        xml += f"  <url><loc>{BASE_URL}{p}</loc></url>\n"
+    xml += "</urlset>"
+    from fastapi.responses import Response
+    return Response(content=xml, media_type="application/xml")
+
 @app.get("/health")
 async def health():
     rate = await get_doge_rate()
