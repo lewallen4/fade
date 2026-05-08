@@ -23,6 +23,7 @@ from app.doge import (
     watch_payment,
     rate_refresh_loop,
     get_doge_rate,
+    get_rmb_rate,
     FADE_DOGE_ADDRESS,
     PRICE_FULL_USD,
     PRICE_AGENT_USD,
@@ -549,12 +550,16 @@ async def verify_token(token: str):
 
 @app.get("/rate")
 async def doge_rate():
-    """Current DOGE/USD rate — useful for agents calculating payment."""
+    """Current DOGE/USD + USD/RMB rates — useful for agents and CN frontend."""
     rate = await get_doge_rate()
+    rmb_rate = await get_rmb_rate()
     return {
         "doge_usd": rate,
+        "usd_rmb":  rmb_rate,
         "full_audit_doge":  round(PRICE_FULL_USD / rate, 3),
         "agent_audit_doge": round(PRICE_AGENT_USD / rate, 3),
+        "full_audit_rmb":   round(PRICE_FULL_USD * rmb_rate, 2),
+        "agent_audit_rmb":  round(PRICE_AGENT_USD * rmb_rate, 2),
         "address": FADE_DOGE_ADDRESS,
     }
 
