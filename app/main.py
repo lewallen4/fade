@@ -396,7 +396,7 @@ async def agent_manifest(request: Request):
                 "verify":      {"path": "/verify/{token}","method": "GET",  "description": "验证认证令牌"},
             },
             "ethics": {
-                "framework": "AI 宪法 v0.5.1",
+                "framework": "AI 伦理宪章 v0.5.1",
                 "reference": f"{BASE_URL}/constitution",
                 "summary": "这张牌桌上的所有人 — 无论人类还是代理 — 都受到同等尊重。没有例外。"
             }
