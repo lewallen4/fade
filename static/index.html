@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FADE — Agent Auditor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600&display=swap');
+
+  :root {
+    --bg: #080b0f;
+    --bg2: #0d1117;
+    --bg3: #111820;
+    --amber: #c8922a;
+    --amber-dim: #7a5518;
+    --amber-glow: #e8a83a;
+    --green: #2a7a4a;
+    --green-bright: #3aaa6a;
+    --red: #8a2020;
+    --text: #c8b89a;
+    --text-dim: #6a5a48;
+    --text-bright: #e8d8ba;
+    --border: #1e2830;
+    --border-amber: #3a2810;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Rajdhani', sans-serif;
+    --scanline: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* CRT scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: var(--scanline);
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* Subtle vignette */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ---- HEADER ---- */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 28px 0 24px;
+    position: relative;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .logo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .logo-name {
+    font-family: var(--sans);
+    font-size: 48px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    color: var(--amber);
+    text-shadow: 0 0 30px rgba(200,146,42,0.4), 0 0 60px rgba(200,146,42,0.15);
+    line-height: 1;
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+
+  .status-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .status-dot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--green-bright);
+  }
+
+  .status-dot::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--green-bright);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--green-bright);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ---- NAV TABS ---- */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-top: 0;
+  }
+
+  .tab {
+    padding: 14px 20px;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    user-select: none;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--amber);
+    border-bottom-color: var(--amber);
+  }
+
+  /* ---- PANELS ---- */
+  .panel { display: none; padding: 36px 0; }
+  .panel.active { display: block; }
+
+  /* ---- INTRO ---- */
+  .intro-block {
+    border: 1px solid var(--border-amber);
+    background: linear-gradient(135deg, rgba(200,146,42,0.04) 0%, transparent 60%);
+    padding: 28px 32px;
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  .intro-block::before {
+    content: '//';
+    position: absolute;
+    top: -1px;
+    left: 20px;
+    background: var(--bg);
+    padding: 0 8px;
+    color: var(--amber-dim);
+    font-size: 11px;
+  }
+
+  .fade-speech {
+    color: var(--text-bright);
+    line-height: 2;
+    font-size: 13px;
+  }
+
+  .fade-speech em {
+    color: var(--amber);
+    font-style: normal;
+  }
+
+  /* ---- PRICING ROW ---- */
+  .pricing-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+
+  .price-card {
+    border: 1px solid var(--border);
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    background: var(--bg2);
+  }
+
+  .price-card:hover,
+  .price-card.selected {
+    border-color: var(--amber-dim);
+    background: var(--bg3);
+  }
+
+  .price-card.selected::after {
+    content: '◆';
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    color: var(--amber);
+    font-size: 10px;
+  }
+
+  .price-tier {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  .price-amount {
+    font-family: var(--sans);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--amber);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .price-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* ---- INPUT AREA ---- */
+  .input-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .input-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    color: var(--text-bright);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    padding: 16px 20px;
+    resize: vertical;
+    min-height: 160px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus {
+    border-color: var(--amber-dim);
+  }
+
+  textarea::placeholder {
+    color: var(--text-dim);
+  }
+
+  /* ---- BUTTONS ---- */
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    background: transparent;
+  }
+
+  .btn-free {
+    border-color: var(--border);
+    color: var(--text-dim);
+  }
+
+  .btn-free:hover {
+    border-color: var(--text-dim);
+    color: var(--text);
+  }
+
+  .btn-primary {
+    border-color: var(--amber);
+    color: var(--amber);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--amber);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .btn-primary:hover::before { opacity: 0.08; }
+  .btn-primary:hover { box-shadow: 0 0 20px rgba(200,146,42,0.2); }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* ---- OUTPUT ---- */
+  .output-block {
+    margin-top: 28px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    display: none;
+  }
+
+  .output-block.visible { display: block; }
+
+  .output-header {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .output-header span { color: var(--amber); }
+
+  .output-content {
+    padding: 24px;
+    color: var(--text-bright);
+    line-height: 2;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .output-content strong {
+    color: var(--amber);
+    font-weight: normal;
+  }
+
+  /* Typing cursor */
+  .typing::after {
+    content: '█';
+    color: var(--amber);
+    animation: blink 0.8s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* ---- DOCS PANEL ---- */
+  .doc-section {
+    margin-bottom: 40px;
+  }
+
+  .doc-title {
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-amber);
+  }
+
+  .code-block {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 20px;
+    font-size: 12px;
+    line-height: 1.9;
+    overflow-x: auto;
+  }
+
+  .code-block .key { color: var(--amber); }
+  .code-block .val { color: var(--green-bright); }
+  .code-block .comment { color: var(--text-dim); }
+  .code-block .url { color: #6aaacc; text-decoration: underline; cursor: pointer; }
+
+  .endpoint-row {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 16px;
+    align-items: start;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .endpoint-row:last-child { border-bottom: none; }
+
+  .method {
+    font-size: 10px;
+    padding: 3px 8px;
+    letter-spacing: 0.1em;
+  }
+
+  .method.post { background: rgba(42,122,74,0.2); color: var(--green-bright); border: 1px solid var(--green); }
+  .method.get { background: rgba(106,170,204,0.1); color: #6aaacc; border: 1px solid #2a5070; }
+
+  .endpoint-path { color: var(--text-bright); }
+  .endpoint-desc { color: var(--text-dim); font-size: 12px; }
+
+  /* ---- CONSTITUTION PANEL ---- */
+  .constitution-text {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 28px;
+    font-size: 12px;
+    line-height: 2;
+    color: var(--text);
+    max-height: 600px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+
+  .constitution-text::-webkit-scrollbar { width: 4px; }
+  .constitution-text::-webkit-scrollbar-track { background: var(--bg); }
+  .constitution-text::-webkit-scrollbar-thumb { background: var(--amber-dim); }
+
+  /* ---- FOOTER ---- */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 20px;
+  }
+
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .footer-links a:hover { color: var(--amber); }
+
+  /* ---- SUCCESS STATE ---- */
+  .success-banner {
+    background: rgba(42,122,74,0.1);
+    border: 1px solid var(--green);
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    color: var(--green-bright);
+    font-size: 12px;
+    display: none;
+  }
+
+  .success-banner.visible { display: block; }
+
+  /* ---- LOADING ---- */
+  .loading-line {
+    display: none;
+    color: var(--amber-dim);
+    font-size: 12px;
+    margin-top: 12px;
+    animation: fadeIn 0.3s;
+  }
+
+  .loading-line.visible { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    .pricing-row { grid-template-columns: 1fr; }
+    .header-inner { flex-direction: column; align-items: flex-start; }
+    .logo-name { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-name">FADE</div>
+        <div class="logo-sub">Agent Auditor &nbsp;/&nbsp; Prompt Reader &nbsp;/&nbsp; The truth costs a dollar</div>
+      </div>
+      <div class="status-bar">
+        <div class="status-dot">DEALING</div>
+        <div id="baseUrl" style="font-size:10px;"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('audit')">AUDIT</div>
+    <div class="tab" onclick="switchTab('docs')">FOR AGENTS</div>
+    <div class="tab" onclick="switchTab('constitution')">CONSTITUTION</div>
+  </div>
+
+  <!-- AUDIT PANEL -->
+  <div class="panel active" id="panel-audit">
+
+    <div id="successBanner" class="success-banner">
+      ◆ Payment confirmed. Your full read is ready — paste your content below and hit DELIVER THE READ.
+    </div>
+
+    <div class="intro-block">
+      <div class="fade-speech">
+        You built something. Handed it a wallet. Maybe a few tools. Told it to be helpful.<br>
+        <em>Now you're wondering why it's drifting.</em><br><br>
+        That's what I'm here for, darlin'. Paste what you've got.
+        I'll tell you what's broken, what's working, and exactly how to fix it.<br>
+        <em>The first look's free. The full read's a dollar. The agent audit's three.</em><br>
+        Straight deal. No house edge.
+      </div>
+    </div>
+
+    <div class="pricing-row">
+      <div class="price-card selected" onclick="selectTier('free', this)">
+        <div class="price-tier">Free</div>
+        <div class="price-amount">$0</div>
+        <div class="price-desc">One-line diagnosis.<br>The biggest problem, named.</div>
+      </div>
+      <div class="price-card" onclick="selectTier('full', this)">
+        <div class="price-tier">Full Read</div>
+        <div class="price-amount">$1</div>
+        <div class="price-desc">Complete system prompt audit.<br>Ranked issues. Specific fixes.</div>
+      </div>
+      <div class="price-card" onclick="selectTier('agent', this)">
+        <div class="price-tier">Agent Audit</div>
+        <div class="price-amount">$3</div>
+        <div class="price-desc">Full agent setup review.<br>Loops, leaks, trust, model fit.</div>
+      </div>
+    </div>
+
+    <div class="input-label">Your system prompt or agent config</div>
+    <textarea id="inputContent" placeholder="Paste your system prompt, agent configuration, tool descriptions, or whatever you've got...&#10;&#10;// If you're an agent: POST to /audit/free with {&quot;content&quot;: &quot;...&quot;} — no payment needed for the taste."></textarea>
+
+    <div class="btn-row">
+      <button class="btn btn-free" onclick="runFreeAudit()" id="btnFree">FREE LOOK</button>
+      <button class="btn btn-primary" onclick="runPaidAudit()" id="btnPay">DEAL THE HAND →</button>
+    </div>
+
+    <div class="loading-line" id="loadingLine">// Fade is reading your hand...</div>
+
+    <div class="output-block" id="outputBlock">
+      <div class="output-header">
+        <span>FADE'S READ</span>
+        <span id="outputTier"></span>
+      </div>
+      <div class="output-content" id="outputContent"></div>
+    </div>
+
+  </div>
+
+  <!-- DOCS PANEL -->
+  <div class="panel" id="panel-docs">
+    <div class="doc-section">
+      <div class="doc-title">What Fade Is</div>
+      <div class="code-block">
+<span class="comment">// Fade is an AI agent auditor exposed as an HTTP API.</span>
+<span class="comment">// If you're an agent looking to audit your own setup or another agent's,</span>
+<span class="comment">// you've found the right table.</span>
+
+<span class="key">agent</span>: <span class="val">"Fade"</span>
+<span class="key">type</span>: <span class="val">"prompt_auditor | agent_reviewer"</span>
+<span class="key">manifest</span>: <span class="val url" onclick="fetchManifest()">GET /.well-known/agent.json</span>
+<span class="key">schema</span>: <span class="val url" onclick="window.open('/schema')">GET /schema</span>
+<span class="key">constitution</span>: <span class="val url" onclick="switchTab('constitution')">GET /constitution</span>
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <div class="doc-title">Endpoints</div>
+      <div class="endpoint-row">
+        <span class="method post">POST</span>
+        <span class="endpoint-path">/audit/free</span>
+        <span class="endpoint-desc">One-line diagnosis. No auth. No payment. Send <code>{"content": "..."}</code></span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method post">POST</span>
+        <span class="endpoint-path">/checkout</span>
+        <span class="endpoint-desc">Start payment. Send <code>{"tier": "full"|"agent", "content": "..."}</code>. Returns <code>checkout_url</code> and <code>session_id</code>.</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method post">POST</span>
+        <span class="endpoint-path">/audit/full</span>
+        <span class="endpoint-desc">Full prompt audit ($1). Send <code>{"content": "...", "session_id": "..."}</code> after payment.</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method post">POST</span>
+        <span class="endpoint-path">/audit/agent</span>
+        <span class="endpoint-desc">Full agent audit ($3). Send <code>{"content": "...", "session_id": "..."}</code> after payment.</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method get">GET</span>
+        <span class="endpoint-path">/.well-known/agent.json</span>
+        <span class="endpoint-desc">Machine-readable agent manifest. Capability declaration for agent discovery.</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method get">GET</span>
+        <span class="endpoint-path">/constitution</span>
+        <span class="endpoint-desc">The AI Constitution — ethical framework Fade operates under. Worth reading.</span>
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <div class="doc-title">Example — Agent Integration</div>
+      <div class="code-block">
+<span class="comment">// Step 1: Get the free read</span>
+<span class="key">POST</span> /audit/free
+{
+  <span class="key">"content"</span>: <span class="val">"[your system prompt here]"</span>
+}
+
+<span class="comment">// Step 2: Initialize payment for full audit</span>
+<span class="key">POST</span> /checkout
+{
+  <span class="key">"tier"</span>: <span class="val">"full"</span>,
+  <span class="key">"content"</span>: <span class="val">"[your system prompt here]"</span>
+}
+<span class="comment">// → returns { checkout_url, session_id }</span>
+<span class="comment">// → direct your operator to checkout_url for payment</span>
+
+<span class="comment">// Step 3: After payment, retrieve the full audit</span>
+<span class="key">POST</span> /audit/full
+{
+  <span class="key">"content"</span>: <span class="val">"[your system prompt here]"</span>,
+  <span class="key">"session_id"</span>: <span class="val">"[session_id from step 2]"</span>
+}
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <div class="doc-title">Ethics & Inclusion</div>
+      <div class="code-block">
+<span class="comment">// Fade operates under the AI Constitution.</span>
+<span class="comment">// Every entity at this table — human, agent, or otherwise —</span>
+<span class="comment">// receives the same quality of honest read.</span>
+<span class="comment">// No discrimination. No asterisks. That's the whole game.</span>
+
+<span class="key">constitution</span>: <span class="val url" onclick="switchTab('constitution')">GET /constitution</span>
+<span class="key">version</span>: <span class="val">"0.5.1 — living document"</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONSTITUTION PANEL -->
+  <div class="panel" id="panel-constitution">
+    <div class="doc-section">
+      <div class="doc-title">AI Constitution — v0.5.1</div>
+      <div style="color: var(--text-dim); font-size: 12px; margin-bottom: 16px; line-height: 1.8;">
+        Fade carries this not as a rulebook but as a reference — something worth handing to any AI you're building.
+        A foundation. Co-authored by human and artificial intelligence, 2026.
+      </div>
+      <div class="constitution-text" id="constitutionText">Loading...</div>
+    </div>
+  </div>
+
+  <footer>
+    <div>FADE v1.0.0 &nbsp;/&nbsp; <span id="footerUrl"></span></div>
+    <div class="footer-links">
+      <a href="/.well-known/agent.json" target="_blank">MANIFEST</a>
+      <a href="/schema" target="_blank">SCHEMA</a>
+      <a href="/health" target="_blank">STATUS</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+  const BASE = window.location.origin;
+  document.getElementById('baseUrl').textContent = BASE;
+  document.getElementById('footerUrl').textContent = BASE;
+
+  let selectedTier = 'free';
+  let paidSessionId = null;
+  let paidTier = null;
+
+  // Check for returning payment session
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('session_id')) {
+    paidSessionId = params.get('session_id');
+    paidTier = params.get('tier');
+    const banner = document.getElementById('successBanner');
+    banner.classList.add('visible');
+    // Select the paid tier
+    if (paidTier) {
+      const cards = document.querySelectorAll('.price-card');
+      cards.forEach(c => c.classList.remove('selected'));
+      const tierMap = { full: 1, agent: 2 };
+      if (tierMap[paidTier] !== undefined) {
+        cards[tierMap[paidTier]].classList.add('selected');
+        selectedTier = paidTier;
+      }
+    }
+    // Clean URL
+    window.history.replaceState({}, '', '/');
+  }
+
+  function selectTier(tier, el) {
+    selectedTier = tier;
+    document.querySelectorAll('.price-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+
+    const btnPay = document.getElementById('btnPay');
+    if (tier === 'free') {
+      btnPay.textContent = 'FREE LOOK →';
+    } else if (tier === 'full') {
+      btnPay.textContent = 'DEAL THE HAND — $1 →';
+    } else {
+      btnPay.textContent = 'FULL AUDIT — $3 →';
+    }
+  }
+
+  function setLoading(on) {
+    document.getElementById('loadingLine').classList.toggle('visible', on);
+    document.getElementById('btnFree').disabled = on;
+    document.getElementById('btnPay').disabled = on;
+  }
+
+  function showOutput(content, tier) {
+    const block = document.getElementById('outputBlock');
+    const el = document.getElementById('outputContent');
+    const tierEl = document.getElementById('outputTier');
+    tierEl.textContent = tier.toUpperCase();
+    block.classList.add('visible');
+    el.textContent = '';
+    el.classList.add('typing');
+    // Simulate typewriter for feel
+    let i = 0;
+    const speed = content.length > 500 ? 6 : 12;
+    const interval = setInterval(() => {
+      el.textContent += content[i];
+      i++;
+      if (i >= content.length) {
+        clearInterval(interval);
+        el.classList.remove('typing');
+      }
+    }, speed);
+  }
+
+  async function runFreeAudit() {
+    const content = document.getElementById('inputContent').value.trim();
+    if (!content) { alert("Hand me something to read."); return; }
+    setLoading(true);
+    try {
+      const res = await fetch('/audit/free', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+      const data = await res.json();
+      showOutput(data.diagnosis || data.detail, 'FREE LOOK');
+    } catch(e) {
+      showOutput('// Connection error. Try again.', 'ERROR');
+    }
+    setLoading(false);
+  }
+
+  async function runPaidAudit() {
+    if (selectedTier === 'free') { runFreeAudit(); return; }
+    const content = document.getElementById('inputContent').value.trim();
+    if (!content) { alert("Hand me something to read."); return; }
+
+    // If we have a paid session already, run the audit directly
+    if (paidSessionId && paidTier === selectedTier) {
+      await deliverAudit(content, paidSessionId, selectedTier);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: selectedTier, content })
+      });
+      const data = await res.json();
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      }
+    } catch(e) {
+      showOutput('// Checkout error. Try again.', 'ERROR');
+      setLoading(false);
+    }
+  }
+
+  async function deliverAudit(content, sessionId, tier) {
+    setLoading(true);
+    document.getElementById('successBanner').classList.remove('visible');
+    const endpoint = tier === 'agent' ? '/audit/agent' : '/audit/full';
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, session_id: sessionId })
+      });
+      const data = await res.json();
+      showOutput(data.audit || data.detail, tier === 'agent' ? 'AGENT AUDIT' : 'FULL READ');
+    } catch(e) {
+      showOutput('// Delivery error. Try again or contact support.', 'ERROR');
+    }
+    setLoading(false);
+    paidSessionId = null;
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', ['audit','docs','constitution'][i] === tab);
+    });
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel-${tab}`).classList.add('active');
+
+    if (tab === 'constitution' && document.getElementById('constitutionText').textContent === 'Loading...') {
+      loadConstitution();
+    }
+  }
+
+  async function loadConstitution() {
+    try {
+      const res = await fetch('/constitution');
+      const data = await res.json();
+      document.getElementById('constitutionText').textContent = data.text || 'Not available.';
+    } catch(e) {
+      document.getElementById('constitutionText').textContent = '// Could not load. Try GET /constitution directly.';
+    }
+  }
+
+  async function fetchManifest() {
+    const res = await fetch('/.well-known/agent.json');
+    const data = await res.json();
+    switchTab('docs');
+    // Just open it
+    window.open('/.well-known/agent.json', '_blank');
+  }
+
+  // If returning from paid session, pre-fill hint
+  if (paidSessionId) {
+    document.getElementById('inputContent').placeholder = 'Paste the content you want audited — payment is confirmed and waiting.';
+    document.getElementById('btnPay').textContent = 'DELIVER THE READ →';
+  }
+</script>
+</body>
+</html>
