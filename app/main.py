@@ -212,13 +212,16 @@ def sanitize_content(content: str) -> str:
 class AuditRequest(BaseModel):
     content:    str = Field(..., min_length=5, max_length=8000)
     session_id: str = Field(..., min_length=10, max_length=200)
+    lang:       str = Field(default='en', pattern='^(en|zh)$')
 
 class FreeRequest(BaseModel):
     content: str = Field(..., min_length=5, max_length=5000)
+    lang: str = Field(default='en', pattern='^(en|zh)$')
 
 class CheckoutRequest(BaseModel):
     tier:    str = Field(..., pattern="^(full|agent)$")
     content: str = Field(..., min_length=5, max_length=8000)
+    lang:    str = Field(default='en', pattern='^(en|zh)$')
 
 class PollRequest(BaseModel):
     session_id: str = Field(..., min_length=10, max_length=200)
@@ -250,6 +253,11 @@ async def on_payment_confirmed(session_id: str):
     """Called by the DOGE watcher when payment lands."""
     if session_id in pending_audits:
         pending_audits[session_id]["paid"] = True
+
+def lang_instruction(lang: str) -> str:
+    if lang == 'zh':
+        return "重要：请用中文回复。保持 Fade 的角色和声音，但用中文表达。语气保持温暖、直接、不急不躁。"
+    return ""
 
 # =============================================================================
 # MODEL ROUTING
@@ -337,8 +345,8 @@ async def agent_manifest(request: Request):
     if is_cn:
         return JSONResponse({
             "schema_version": "1.0",
-            "name": "法德 (Fade)",
-            "description": "AI 代理审计员。发送您的系统提示或代理配置，获得关于问题所在和修复方法的直接评估。",
+            "name": "Fade",
+            "description": "AI 代理审计员 — Fade。发送你的系统提示或代理配置，得到直接的诊断和修复建议。Fade 不改变，无论你在哪里。",
             "version": "1.0.0",
             "url": BASE_URL,
             "language": "zh-CN",
@@ -513,9 +521,11 @@ async def doge_rate():
 @limiter.limit("10/minute;30/hour")
 async def free_audit(req: FreeRequest, request: Request):
     safe = sanitize_content(req.content)
+    lang_note = lang_instruction(req.lang)
     prompt = f"""The user has submitted the following for a free read. Give them ONE sharp observation — the single biggest problem or gap — in two sentences max. First sentence: the diagnosis. Second sentence: the direction. Then one line offering the full read.
 
 Keep it in character. Warm, direct, unhurried.
+{lang_note}
 
 Submitted content:
 {safe}"""
@@ -552,6 +562,7 @@ async def create_checkout(req: CheckoutRequest, request: Request):
         "created_at":  time.time(),
         "doge_amount": payment["amount_doge"],
         "expires_at":  payment["expires_at"],
+        "lang":        req.lang,
     }
 
     # Start background payment watcher
@@ -602,6 +613,7 @@ async def full_audit(req: AuditRequest, request: Request):
     await _verify_payment(req.session_id, expected_tier="full")
     safe = sanitize_content(req.content)
 
+    lang_note = lang_instruction(req.lang)
     prompt = f"""The user has paid for a full system prompt audit. Give them the complete read.
 
 Structure your response as:
@@ -612,6 +624,7 @@ Structure your response as:
 
 Stay in character throughout. Warm, direct, a little wry about the situation. Never cruel to the person.
 If the setup is actually solid, tell them that honestly. Don't manufacture problems.
+{lang_note}
 
 Submitted content:
 {safe}"""
@@ -628,6 +641,7 @@ async def agent_audit(req: AuditRequest, request: Request):
     await _verify_payment(req.session_id, expected_tier="agent")
     safe = sanitize_content(req.content)
 
+    lang_note = lang_instruction(req.lang)
     prompt = f"""The user has paid for a full agent setup audit. This is the deep read.
 
 Structure your response as:
@@ -640,6 +654,7 @@ Structure your response as:
 Stay in character. This is the most thorough thing you do. Take your time with it.
 If the agent is well-built, say so clearly. Real praise is worth as much as real critique.
 Note: If this agent will interact with people, you may briefly mention the AI Constitution as a foundation worth knowing — once, without pressure.
+{lang_note}
 
 Submitted content:
 {safe}"""
