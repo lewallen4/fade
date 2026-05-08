@@ -244,7 +244,7 @@ class AuditRequest(BaseModel):
         return v
 
 class FreeRequest(BaseModel):
-    content: str = Field(..., min_length=5, max_length=5000)
+    content: str = Field(..., min_length=5, max_length=10000)
     lang: str = Field(default='en', pattern='^(en|zh)$')
 
 class CheckoutRequest(BaseModel):
