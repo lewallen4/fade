@@ -812,7 +812,7 @@
       const res = await fetch('/audit/free', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ content, lang: currentLang })
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -939,12 +939,12 @@
       tabAgents: "面向代理",
       tabConstitution: "AI 宪法",
       tabNews: "GenAI 新闻",
-      intro: `你造了个东西。给了它钱包，给了它工具，告诉它去帮忙。<br>
-        <em>现在你在想，为什么它走偏了。</em><br><br>
-        这就是我在这里的原因。把你的东西粘贴过来，
+      intro: `你造了个东西。给了它钱包，给了它工具，告诉它要有用。<br>
+        <em>现在你在想，为什么它偏了。</em><br><br>
+        把你的东西放到桌上来，朋友。Fade 来读牌。<br>
         我告诉你哪里坏了，哪里还行，怎么修。<br>
         <em>第一眼免费。完整审计一美元。代理审计三美元。</em><br>
-        明码实价，没有猫腻。`,
+        直来直去。这就是这里的规矩。`,
       tierFreeLabel: "免费",
       tierFreeDesc: "一句话诊断。<br>最大的问题，直接说出来。",
       tierFullLabel: "完整审计",
@@ -1113,12 +1113,14 @@ function showDogeCheckout(content, tier) {
     dogeSession = data.session_id;
     dogeContent = content;
     dogeTier = tier;
+    dogeLang = currentLang;
     dogeExpiry = data.expires_at;
     showDogeOverlay(data);
   }).catch(() => showOutput('// Checkout error. Try again.', 'ERROR'));
 }
 
 let dogeSession = null;
+let dogeLang = 'en';
 let dogeContent = null;
 let dogeTier = null;
 let pollInterval = null;
@@ -1215,7 +1217,7 @@ async function deliverDogeAudit() {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ content: dogeContent, session_id: dogeSession })
+      body: JSON.stringify({ content: dogeContent, session_id: dogeSession, lang: dogeLang })
     });
     const data = await res.json();
     showOutput(data.audit || data.detail, dogeTier === 'agent' ? 'AGENT AUDIT' : 'FULL READ');
