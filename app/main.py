@@ -308,7 +308,6 @@ async def call_fade_free(user_message: str, max_tokens: int = 300) -> str:
                 json={
                     "model": OPENROUTER_FREE_MODEL,
                     "max_tokens": max_tokens,
-                    "reasoning": {"enabled": True},
                     "messages": [
                         {"role": "system", "content": FADE_SYSTEM},
                         {"role": "user",   "content": user_message},
@@ -321,48 +320,13 @@ async def call_fade_free(user_message: str, max_tokens: int = 300) -> str:
             data = resp.json()
             msg = data["choices"][0]["message"]
 
-            # Nemotron reasoning response structure:
-            # msg["content"]          → final response (what we want)
-            # msg["reasoning"]        → thinking text (separate field, discard)
-            # msg["reasoning_details"]→ thinking array (discard)
-            #
-            # If content is empty/null but reasoning exists, the model only
-            # returned its thinking and not a final answer — retry with
-            # reasoning disabled as fallback.
-
+            # Reasoning parameter removed — model answers directly in content.
+            # Belt and suspenders: strip <think> tags in case any bleed through.
             text = msg.get("content") or ""
-
-            # Strip <think>...</think> blocks (belt and suspenders)
             text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
-            # If content is empty but reasoning exists, model leaked thinking only
-            if not text and msg.get("reasoning"):
-                logger.warning("OpenRouter returned empty content with reasoning only — retrying without reasoning")
-                # Recursive retry with reasoning disabled
-                retry_resp = await client.post(
-                    OPENROUTER_URL,
-                    headers={
-                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                        "Content-Type": "application/json",
-                        "HTTP-Referer": BASE_URL,
-                        "X-Title": "Fade Agent Auditor",
-                    },
-                    json={
-                        "model": OPENROUTER_FREE_MODEL,
-                        "max_tokens": max_tokens,
-                        "messages": [
-                            {"role": "system", "content": FADE_SYSTEM},
-                            {"role": "user",   "content": user_message},
-                        ],
-                    }
-                )
-                retry_resp.raise_for_status()
-                retry_data = retry_resp.json()
-                text = retry_data["choices"][0]["message"].get("content") or ""
-                text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
-
             if not text:
-                logger.error(f"OpenRouter returned empty content. Full msg keys: {list(msg.keys())}")
+                logger.error(f"OpenRouter returned empty content. Keys: {list(msg.keys())}")
                 raise HTTPException(status_code=502, detail="Couldn't reach the table. Try again shortly.")
 
             return text
