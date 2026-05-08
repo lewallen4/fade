@@ -339,6 +339,23 @@ async def get_constitution():
         "note": "Fade carries this as a reference — not a rulebook, but a foundation worth knowing about."
     })
 
+@app.get("/news")
+async def get_news():
+    """
+    GenAI news feed. Posts are stored in docs/news.json.
+    Your automation writes to that file daily.
+    Format: { "posts": [{ "title", "summary", "date", "url" }] }
+    """
+    path = Path(__file__).parent.parent / "docs" / "news.json"
+    if path.exists():
+        import json
+        try:
+            data = json.loads(path.read_text())
+            return JSONResponse(data)
+        except Exception:
+            pass
+    return JSONResponse({"posts": []})
+
 @app.get("/schema")
 async def schema():
     return JSONResponse({
