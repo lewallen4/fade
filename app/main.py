@@ -294,7 +294,7 @@ def lang_instruction(lang: str) -> str:
 # Paid  → Anthropic  → Claude Sonnet
 # =============================================================================
 
-async def call_fade_free(user_message: str, max_tokens: int = 300) -> str:
+async def call_fade_free(user_message: str, max_tokens: int = 2000) -> str:
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
@@ -308,8 +308,9 @@ async def call_fade_free(user_message: str, max_tokens: int = 300) -> str:
                 json={
                     "model": OPENROUTER_FREE_MODEL,
                     "max_tokens": max_tokens,
+                    "reasoning": {"enabled": True, "exclude": True},
                     "messages": [
-                        {"role": "system", "content": FADE_SYSTEM},
+                        {"role": "system", "content": FADE_SYSTEM + "\n\nIMPORTANT: Put all internal reasoning in the reasoning field, not content. The content field should ONLY contain your final response to the user, in character, with no preamble, planning, or meta-commentary."},
                         {"role": "user",   "content": user_message},
                     ],
                 }
@@ -574,7 +575,7 @@ Keep it in character. Warm, direct, unhurried.
 Submitted content:
 {safe}"""
 
-    diagnosis = await call_fade_free(prompt, max_tokens=300)
+    diagnosis = await call_fade_free(prompt, max_tokens=2000)
     logger.info(f"Free audit served | chars={len(req.content)}")
     return {
         "diagnosis": diagnosis,
