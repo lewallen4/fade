@@ -177,7 +177,7 @@ class AuditRequest(BaseModel):
     session_id: str = Field(..., min_length=10, max_length=200)
 
 class FreeRequest(BaseModel):
-    content: str = Field(..., min_length=5, max_length=3000)
+    content: str = Field(..., min_length=5, max_length=5000)
 
 class CheckoutRequest(BaseModel):
     tier:    str = Field(..., pattern="^(full|agent)$")
