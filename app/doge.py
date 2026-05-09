@@ -31,7 +31,7 @@ PRICE_AGENT_USD = float(os.environ.get("PRICE_AGENT_USD", "3.00"))
 POLL_INTERVAL = 30
 
 # How long to wait for payment before expiring (seconds)
-PAYMENT_TIMEOUT = 60 * 30  # 30 minutes
+PAYMENT_TIMEOUT = 60 * 120  # 120 minutes
 
 # --- Rate cache ---
 _doge_rate: float = 0.0          # USD per 1 DOGE
