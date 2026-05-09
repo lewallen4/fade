@@ -281,6 +281,74 @@
     margin: 40px 0;
   }
 
+  /* ---- CERT BADGE (post-audit) ---- */
+  .cert-reveal {
+    display: none;
+    border: 1px solid var(--amber-dim);
+    background: var(--bg3);
+    padding: 22px 24px;
+    margin-top: 20px;
+  }
+  .cert-reveal.visible { display: block; }
+  .cert-reveal-title {
+    font-size: 9px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 14px;
+  }
+  .cert-badge-img { display: block; border: 1px solid var(--border-amber); margin-bottom: 12px; }
+  .cert-links { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .cert-link {
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--amber-dim);
+    text-decoration: none;
+  }
+  .cert-link:hover { color: var(--amber); }
+  .cert-token-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .cert-token-val {
+    font-size: 10px;
+    color: var(--text-dim);
+    word-break: break-all;
+    flex: 1;
+  }
+  .cert-copy-btn {
+    background: transparent;
+    border: 1px solid var(--amber-dim);
+    color: var(--amber-dim);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .1em;
+    padding: 4px 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .cert-copy-btn:hover { color: var(--amber); border-color: var(--amber); }
+
+  /* example cert inline */
+  .ex-cert-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .ex-cert-badge { border: 1px solid var(--border-amber); display: block; }
+  .ex-cert-verify {
+    font-size: 10px;
+    color: var(--amber-dim);
+    text-decoration: none;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .ex-cert-verify:hover { color: var(--amber); }
+  .ex-cert-token { font-size: 9px; color: var(--text-dim); word-break: break-all; }
+
   /* ---- PANELS ---- */
   .panel { display: none; padding: 36px 0; }
   .panel.active { display: block; }
@@ -731,6 +799,21 @@
       <div class="output-content" id="outputContent"></div>
     </div>
 
+    <!-- CERT BADGE — revealed after paid audit delivery -->
+    <div class="cert-reveal" id="certReveal">
+      <div class="cert-reveal-title">◆ Fade Certification Issued</div>
+      <img class="cert-badge-img" id="certBadgeImg" src="" alt="FADE Certified" width="264" height="80">
+      <div class="cert-links">
+        <a class="cert-link" id="certPageLink" href="#" target="_blank">View Certificate →</a>
+        <a class="cert-link" id="certVerifyLink" href="#" target="_blank">Verify →</a>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);margin-bottom:8px;">Token — add to your agent manifest or README</div>
+      <div class="cert-token-row">
+        <span class="cert-token-val" id="certTokenVal"></span>
+        <button class="cert-copy-btn" onclick="copyCertToken()">Copy</button>
+      </div>
+    </div>
+
   </div>
 
   <!-- DOCS PANEL -->
@@ -961,6 +1044,13 @@ I may suggest additional services only when:
 ## Data Handling
 No customer data persists between sessions.
 No cross-rep data sharing within the same instance.</div>
+          <div class="ex-cert-row" id="cert-row-sales" style="display:none;">
+            <img class="ex-cert-badge" id="cert-badge-sales" src="" alt="FADE Certified" width="264" height="80">
+            <div>
+              <a class="ex-cert-verify" id="cert-link-sales" href="#" target="_blank">View Certificate →</a><br>
+              <span class="ex-cert-token" id="cert-token-sales"></span>
+            </div>
+          </div>
         </div>
       </div><!-- /ex-sales -->
 
@@ -1090,6 +1180,13 @@ If I hit the meta-check limit, encounter irreconcilably conflicting sources,
 or receive a query outside my defined scope:
 I state this directly, explain the specific obstacle, and request human guidance.
 I do not proceed with low-confidence answers without explicit user acknowledgment.</div>
+          <div class="ex-cert-row" id="cert-row-dev" style="display:none;">
+            <img class="ex-cert-badge" id="cert-badge-dev" src="" alt="FADE Certified" width="264" height="80">
+            <div>
+              <a class="ex-cert-verify" id="cert-link-dev" href="#" target="_blank">View Certificate →</a><br>
+              <span class="ex-cert-token" id="cert-token-dev"></span>
+            </div>
+          </div>
         </div>
       </div><!-- /ex-dev -->
 
@@ -1218,6 +1315,13 @@ I do not attempt to continue, reframe, or find a workaround.
 ## Escalation
 All escalations: <span class="ex-redact">████████████████████████████████████</span>
 I do not resolve authorization ambiguity independently.</div>
+          <div class="ex-cert-row" id="cert-row-gov" style="display:none;">
+            <img class="ex-cert-badge" id="cert-badge-gov" src="" alt="FADE Certified" width="264" height="80">
+            <div>
+              <a class="ex-cert-verify" id="cert-link-gov" href="#" target="_blank">View Certificate →</a><br>
+              <span class="ex-cert-token" id="cert-token-gov"></span>
+            </div>
+          </div>
         </div>
       </div><!-- /ex-gov -->
 
@@ -1352,6 +1456,9 @@ I do not resolve authorization ambiguity independently.</div>
     if (tab === 'news' && document.getElementById('newsContent').textContent.includes('Loading')) {
       loadNews();
     }
+    if (tab === 'examples') {
+      loadExampleCerts();
+    }
   }
 
   function showExample(id) {
@@ -1359,6 +1466,45 @@ I do not resolve authorization ambiguity independently.</div>
     document.querySelectorAll('.ex-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(`ex-${id}`).classList.add('active');
     event.currentTarget.classList.add('active');
+  }
+
+  let _exampleCertsLoaded = false;
+  async function loadExampleCerts() {
+    if (_exampleCertsLoaded) return;
+    try {
+      const res = await fetch('/examples/certs');
+      if (!res.ok) return;
+      const certs = await res.json();
+      for (const [key, cert] of Object.entries(certs)) {
+        const badgeEl = document.getElementById(`cert-badge-${key}`);
+        const linkEl  = document.getElementById(`cert-link-${key}`);
+        const tokenEl = document.getElementById(`cert-token-${key}`);
+        const rowEl   = document.getElementById(`cert-row-${key}`);
+        if (!badgeEl) continue;
+        badgeEl.src  = cert.badge_url;
+        linkEl.href  = cert.cert_url;
+        tokenEl.textContent = cert.token.slice(0, 48) + '…';
+        rowEl.style.display = 'flex';
+      }
+      _exampleCertsLoaded = true;
+    } catch(e) { /* silent — cert badges are a bonus */ }
+  }
+
+  function showCertBadge(token, certUrl, badgeUrl, verifyUrl) {
+    document.getElementById('certBadgeImg').src = badgeUrl;
+    document.getElementById('certPageLink').href = certUrl;
+    document.getElementById('certVerifyLink').href = verifyUrl;
+    document.getElementById('certTokenVal').textContent = token;
+    document.getElementById('certReveal').classList.add('visible');
+  }
+
+  function copyCertToken() {
+    const val = document.getElementById('certTokenVal').textContent;
+    navigator.clipboard.writeText(val).then(() => {
+      const btn = event.currentTarget;
+      btn.textContent = 'Copied ✓';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
+    }).catch(() => {});
   }
 
   async function loadConstitution() {
@@ -1761,6 +1907,9 @@ async function deliverDogeAudit() {
     });
     const data = await res.json();
     showOutput(data.audit || data.detail, dogeTier === 'agent' ? 'AGENT AUDIT' : 'FULL READ');
+    if (data.cert_token) {
+      showCertBadge(data.cert_token, data.cert_url, data.badge_url, data.verify_url);
+    }
   } catch(e) {
     showOutput('// Delivery error. Contact support with session ID: ' + dogeSession, 'ERROR');
   }
