@@ -18,6 +18,10 @@ import httpx
 import logging
 from typing import Optional
 
+# Transaction IDs that have already confirmed a session.
+# Prevents one blockchain tx from unlocking multiple sessions.
+_used_tx_ids: set[str] = set()
+
 logger = logging.getLogger(__name__)
 
 # --- Config ---
@@ -117,10 +121,25 @@ async def generate_payment(session_id: str, tier: str) -> dict:
 
 # --- Transaction watcher ---
 
-async def check_payment(expected_amount: float, tolerance: float = 0.001) -> bool:
+def claim_tx(tx_id: str) -> bool:
     """
-    Check DogeChain API for a recent incoming transaction
-    matching the expected amount (within tolerance).
+    Atomically claim a transaction ID for a session.
+    Returns True if this caller is the first to claim it, False if already taken.
+    """
+    if tx_id in _used_tx_ids:
+        return False
+    _used_tx_ids.add(tx_id)
+    return True
+
+
+async def check_payment(expected_amount: float, tolerance: float = 0.000005) -> Optional[str]:
+    """
+    Check DogeChain API for a recent unclaimed transaction matching the expected
+    amount within tolerance. Returns the tx hash if found, None otherwise.
+
+    Tolerance is intentionally tight (0.000005) — just enough to absorb float
+    precision differences. It is NOT wide enough to overlap with adjacent dust
+    values, so each session's amount is uniquely identifiable.
     """
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -131,19 +150,21 @@ async def check_payment(expected_amount: float, tolerance: float = 0.001) -> boo
             data = resp.json()
 
             txs = data.get("transactions", [])
-            for tx in txs[:20]:  # check last 20 txs
-                # Look for outputs to our address
+            for tx in txs[:20]:
+                tx_id = tx.get("hash") or tx.get("txid") or tx.get("id")
+                if not tx_id or tx_id in _used_tx_ids:
+                    continue
                 for output in tx.get("outputs", []):
                     if output.get("address") == FADE_DOGE_ADDRESS:
                         try:
                             amount = float(output.get("value", 0))
                             if abs(amount - expected_amount) <= tolerance:
-                                return True
+                                return tx_id
                         except (ValueError, TypeError):
                             continue
     except Exception as e:
         logger.error(f"DogeChain check error: {type(e).__name__}")
-    return False
+    return None
 
 async def watch_payment(
     session_id: str,
@@ -153,16 +174,21 @@ async def watch_payment(
 ) -> None:
     """
     Background task: poll for payment until confirmed or expired.
-    Calls on_confirmed(session_id) when payment detected.
+    Calls on_confirmed(session_id, tx_id) when a matching, unclaimed tx is found.
+    If two sessions have amounts within tolerance, the first to poll wins the tx;
+    the other keeps watching until its own payment arrives.
     """
     logger.info(f"Watching for {expected_amount:.8f} DOGE | session={session_id[:8]}...")
 
     while time.time() < expires_at:
-        confirmed = await check_payment(expected_amount)
-        if confirmed:
-            logger.info(f"DOGE payment confirmed | session={session_id[:8]}...")
-            await on_confirmed(session_id)
-            return
+        tx_id = await check_payment(expected_amount)
+        if tx_id:
+            if claim_tx(tx_id):
+                logger.info(f"DOGE payment confirmed | tx={tx_id[:12]}... | session={session_id[:8]}...")
+                await on_confirmed(session_id, tx_id)
+                return
+            # Another session claimed this tx first — keep watching for ours
+            logger.debug(f"TX {tx_id[:12]}... already claimed, still watching | session={session_id[:8]}...")
         await asyncio.sleep(POLL_INTERVAL)
 
     logger.info(f"DOGE payment watch expired | session={session_id[:8]}...")

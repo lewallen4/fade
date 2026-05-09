@@ -279,10 +279,11 @@ def mark_used(session_id: str):
     if session_id in pending_audits:
         pending_audits[session_id]["used"] = True
 
-async def on_payment_confirmed(session_id: str):
+async def on_payment_confirmed(session_id: str, tx_id: str):
     """Called by the DOGE watcher when payment lands."""
     if session_id in pending_audits:
         pending_audits[session_id]["paid"] = True
+        pending_audits[session_id]["tx_id"] = tx_id
 
 def lang_instruction(lang: str) -> str:
     if lang == 'zh':
