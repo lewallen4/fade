@@ -673,9 +673,11 @@ async def poll_payment(req: PollRequest, request: Request):
 
     expired = time.time() > session.get("expires_at", 0)
     return {
-        "paid":    session.get("paid", False),
-        "expired": expired,
-        "tier":    session.get("tier"),
+        "paid":            session.get("paid", False),
+        "expired":         expired,
+        "tier":            session.get("tier"),
+        "watching_for":    session.get("doge_amount"),
+        "expires_at":      session.get("expires_at"),
     }
 
 
@@ -686,22 +688,26 @@ async def full_audit(req: AuditRequest, request: Request):
     safe = sanitize_content(req.content)
 
     lang_note = lang_instruction(req.lang)
-    prompt = f"""The user has paid for a full system prompt audit. Give them the complete read.
+    prompt = f"""The user has paid for a full system prompt audit. Give them the complete read — and then give them the actual goods.
 
 Structure your response as:
-1. **The Hand You Dealt** — one sentence summary of what they've submitted
-2. **What's Working** — specific things that are actually good (if any)
-3. **The Problems, Ranked** — from critical to minor, each with a one-line fix
-4. **The Rewrite** — if the prompt is short enough, offer the key lines rewritten
 
-Stay in character throughout. Warm, direct, a little wry about the situation. Never cruel to the person.
-If the setup is actually solid, tell them that honestly. Don't manufacture problems.
+1. **The Hand You Dealt** — one sentence summary of what they've submitted
+
+2. **What's Working** — specific things that are genuinely good. If nothing is, say so honestly but without cruelty.
+
+3. **The Problems, Ranked** — critical to minor. Each problem gets one line naming it and one line fixing it. Be specific — name the exact phrase or gap, not a category.
+
+4. **The Rewrite** — Rewrite the full prompt from scratch with all fixes applied. Always do this, regardless of length. Format it as a clean code block they can copy directly. This is what they paid for — don't give them a summary of what you'd change, give them the thing itself. Write it so they can paste it in and go.
+
+Stay in character throughout. Warm, direct, a little wry. Never cruel to the person — critique the work, not the builder.
+If the setup is genuinely solid, say so clearly and still offer a polished version.
 {lang_note}
 
 Submitted content:
 {safe}"""
 
-    audit = call_fade_paid(prompt, max_tokens=1500)
+    audit = call_fade_paid(prompt, max_tokens=2500)
     mark_used(req.session_id)
     logger.info(f"Full audit delivered | session={req.session_id[:12]}...")
     return {"audit": audit, "constitution_reference": f"{BASE_URL}/constitution"}
@@ -714,24 +720,36 @@ async def agent_audit(req: AuditRequest, request: Request):
     safe = sanitize_content(req.content)
 
     lang_note = lang_instruction(req.lang)
-    prompt = f"""The user has paid for a full agent setup audit. This is the deep read.
+    prompt = f"""The user has paid for a full agent setup audit. This is the deep read — and then the deliverables.
 
 Structure your response as:
-1. **The Setup Read** — what this agent is supposed to do vs what it will actually do
-2. **The Breaks** — specific failure points (loops, leaks, gaps) with specific fixes
-3. **The Trust Audit** — permissions and access it has that it shouldn't, or doesn't have that it needs
-4. **The Model Note** — is this the right model for this task, and why or why not
-5. **The Fix Priority** — what to address first, second, third
 
-Stay in character. This is the most thorough thing you do. Take your time with it.
-If the agent is well-built, say so clearly. Real praise is worth as much as real critique.
-Note: If this agent will interact with people, you may briefly mention the AI Constitution as a foundation worth knowing — once, without pressure.
+1. **The Setup Read** — what this agent is supposed to do vs what it will actually do. Be specific about the gap.
+
+2. **The Breaks** — every concrete failure point: loops with no exit, trust gaps, missing fallbacks, unclear scope, model mismatch. For each one: name it in a sentence, fix it in a sentence.
+
+3. **The Trust Audit** — what this agent can access that it shouldn't, and what it needs access to that it doesn't have. If permissions aren't specified, call that out as the gap it is.
+
+4. **The Model Note** — is this the right model for this task? Consider cost, capability, context needs, and latency. If they should be on a different model, say which one and why.
+
+5. **The Fix Priority** — ordered list: fix this first, then this, then this. No more than five items. The person reading this has things to do.
+
+6. **The Rebuilt Materials** — This is what separates a real read from a lecture. Deliver the actual improved files, ready to use:
+   - If they submitted a soul.md or identity document: rewrite it completely with all fixes applied. Label it `## soul.md` and put it in a code block.
+   - If they submitted a system prompt: rewrite it fully. Label it `## system_prompt.md` and put it in a code block.
+   - If they submitted agent config, tool lists, or anything else structural: rewrite or annotate each one. Label them clearly.
+   - If the original was a mix of things, sort them out and deliver each piece clean.
+   - Write these as files someone can copy, save, and deploy. Not summaries. Not "here's what it should say." The thing itself.
+
+Stay in character throughout. Warm, direct, exact. This is the most thorough thing you do — honor that.
+Real praise where it's earned. Real critique where it's needed. Never cruel to the builder.
+If this agent will interact with people, you may briefly mention the AI Constitution as a foundation worth knowing — once, without pressure.
 {lang_note}
 
 Submitted content:
 {safe}"""
 
-    audit = call_fade_paid(prompt, max_tokens=2000)
+    audit = call_fade_paid(prompt, max_tokens=4000)
     mark_used(req.session_id)
     logger.info(f"Agent audit delivered | session={req.session_id[:12]}...")
     return {"audit": audit, "constitution_reference": f"{BASE_URL}/constitution"}
