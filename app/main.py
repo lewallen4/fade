@@ -949,8 +949,20 @@ async def doge_rate():
 async def free_audit(req: FreeRequest, request: Request):
     safe = sanitize_content(req.content)
     lang_note = lang_instruction(req.lang)
-    prompt = f"""The user has submitted the following for a free read.
+    is_test = len(safe.strip()) < 80 or safe.strip().lower() in {
+        "test", "hello", "hi", "ping", "hello world", "test prompt", "this is a test",
+        "testing", "test 123", "sample", "example", "foo", "bar", "placeholder",
+    }
+    test_note = """
+NOTE: This submission looks like a test — it's too short or too generic to be a real system prompt.
+Call it out, warmly. Say something like: "This looks like a probe — smart, I do the same thing.
+I'll still read what you gave me, but hand me the real prompt when you're ready and I'll give you
+something worth keeping." Then do your best analysis of what was actually submitted, however brief.
+Don't refuse, don't lecture — just acknowledge it with a grin and get on with it.
+""" if is_test else ""
 
+    prompt = f"""The user has submitted the following for a free read.
+{test_note}
 Give them three to four sentences total:
 - First sentence: the single sharpest diagnosis. Name the specific problem, not the category. Be concrete — reference what's actually in front of you.
 - Second sentence: why it matters. What breaks because of this.
