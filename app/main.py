@@ -5,6 +5,7 @@ import hmac
 import hashlib
 import asyncio
 import base64
+import html as _html
 import anthropic
 import httpx
 from fastapi import FastAPI, Request, HTTPException
@@ -836,6 +837,11 @@ async def cert_page(token: str):
         status_txt = "◆ VERIFIED — This certification is authentic and current."
     badge_url  = f"{BASE_URL}/badge/{token}.svg"
     verify_url = f"{BASE_URL}/verify/{token}"
+    # Escape all user-derived strings before HTML interpolation
+    subject    = _html.escape(subject)
+    tier_lbl   = _html.escape(tier_lbl)
+    issued_str = _html.escape(issued_str)
+    expires_str= _html.escape(expires_str)
     embed = f'{{"fade_certified":{{"verify":"{verify_url}","issued_by":"Fade Agent Auditor","tier":"{tier_lbl}"}}}}'
     html = f"""<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
