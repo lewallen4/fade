@@ -785,6 +785,14 @@
     <div class="input-label">Your system prompt or agent config</div>
     <textarea id="inputContent" placeholder="Paste your system prompt, agent configuration, tool descriptions, or whatever you've got...&#10;&#10;// If you're an agent: POST to /audit/free with {&quot;content&quot;: &quot;...&quot;} — no payment needed for the taste."></textarea>
 
+    <div style="margin-bottom:12px;">
+      <div style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;margin-bottom:6px;">PROMO CODE (OPTIONAL)</div>
+      <input id="promoCode" type="text" placeholder="Enter code to unlock a free paid audit"
+        style="background:#0a0c10;border:1px solid var(--border);color:var(--text);font-family:'Courier New',monospace;font-size:12px;padding:8px 12px;width:100%;box-sizing:border-box;outline:none;letter-spacing:0.05em;"
+        oninput="validatePromoDisplay(this)">
+      <div id="promoMsg" style="font-size:10px;margin-top:4px;min-height:14px;letter-spacing:0.05em;"></div>
+    </div>
+
     <div class="btn-row">
       <button class="btn btn-primary" onclick="runPaidAudit()" id="btnPay">FREE LOOK →</button>
     </div>
@@ -1335,7 +1343,7 @@ I do not resolve authorization ambiguity independently.</div>
   </div><!-- /panel-examples -->
 
   <footer>
-    <div>FADE v1.0.0 &nbsp;/&nbsp; 💖</div>
+    <div>FADE v1.0.0 &nbsp;/&nbsp; Built by <a href="/about" style="color:var(--amber-dim);text-decoration:none;">Grackle</a> &nbsp;/&nbsp; <a href="mailto:gracklejp@gmail.com" style="color:var(--amber-dim);text-decoration:none;">gracklejp@gmail.com</a></div>
     <div id="cnDisclaimer" style="display:none;font-size:10px;color:var(--text-dim);text-align:center;letter-spacing:0.05em;padding:8px 0;">
       本中文版仅供参考。如有歧义，以英文版本为准。
       <a href="javascript:void(0)" onclick="setLang('en')" style="color:var(--amber-dim);text-decoration:none;margin-left:6px;">查看英文版 →</a>
@@ -1346,8 +1354,10 @@ I do not resolve authorization ambiguity independently.</div>
       <span id="langCN" class="lang-btn" onclick="setLang('zh')">🇨🇳 中文</span>
     </div>
     <div class="footer-links">
+      <a href="/about" target="_blank">ABOUT</a>
+      <a href="/tos" target="_blank">TERMS</a>
+      <a href="/privacy" target="_blank">PRIVACY</a>
       <a href="/.well-known/agent.json" target="_blank">MANIFEST</a>
-      <a href="/schema" target="_blank">SCHEMA</a>
       <a href="/health" target="_blank">STATUS</a>
     </div>
   </footer>
@@ -1818,12 +1828,52 @@ let dogeTier = null;
 let pollInterval = null;
 let dogeExpiry = null;
 
+function validatePromoDisplay(input) {
+  const msg = document.getElementById('promoMsg');
+  if (!input.value.trim()) { msg.textContent = ''; return; }
+  // Optimistic display — server validates on submit
+  msg.style.color = 'var(--text-dim)';
+  msg.textContent = '// Code entered — will be applied on submit.';
+}
+
 async function runPaidAudit() {
   if (selectedTier === 'free') { runFreeAudit(); return; }
 
   const content = document.getElementById('inputContent').value.trim();
   if (!content) { alert("Hand me something to read."); return; }
 
+  const promoCode = (document.getElementById('promoCode')?.value || '').trim();
+  const promoMsg  = document.getElementById('promoMsg');
+
+  // --- Promo code path: bypass DOGE entirely ---
+  if (promoCode) {
+    setLoading(true);
+    try {
+      const res = await fetch('/redeem', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ tier: selectedTier, promo_code: promoCode, lang: dogeLang || 'en' })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        if (promoMsg) { promoMsg.style.color = '#c04040'; promoMsg.textContent = '// ' + (err.detail || 'Invalid code.'); }
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      if (promoMsg) { promoMsg.style.color = '#3aaa6a'; promoMsg.textContent = '◆ Code accepted — delivering your read...'; }
+      dogeSession = data.session_id;
+      dogeContent = content;
+      dogeTier    = selectedTier;
+      await deliverDogeAudit();
+    } catch(e) {
+      showOutput('// Connection error. Try again.', 'ERROR');
+    }
+    setLoading(false);
+    return;
+  }
+
+  // --- Normal DOGE payment path ---
   setLoading(true);
   try {
     const res = await fetch('/checkout', {

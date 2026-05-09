@@ -226,6 +226,10 @@ async def startup_check():
 
 anthropic_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", "placeholder"))
 
+# Promo codes — comma-separated in FADE_PROMO_CODES env var, or hardcoded defaults
+_raw_promos = os.environ.get("FADE_PROMO_CODES", "Gr@ckl3isthebestandthisISFR3#")
+VALID_PROMO_CODES: set[str] = {c.strip() for c in _raw_promos.split(",") if c.strip()}
+
 # =============================================================================
 # IDENTITY DOCUMENTS
 # =============================================================================
@@ -372,7 +376,7 @@ async def call_fade_free(user_message: str, max_tokens: int = 2000) -> str:
 def call_fade_paid(user_message: str, max_tokens: int = 1500) -> str:
     try:
         response = anthropic_client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-opus-4-7",
             max_tokens=max_tokens,
             system=FADE_SYSTEM,
             messages=[{"role": "user", "content": user_message}]
@@ -545,6 +549,177 @@ async def schema():
             "/audit/agent":{"post": {"summary": "Full agent setup audit (paid)"}},
         }
     })
+
+class RedeemRequest(BaseModel):
+    tier:       str = Field(..., pattern="^(full|agent)$")
+    promo_code: str = Field(..., min_length=1, max_length=200)
+    lang:       str = Field(default="en", pattern="^(en|zh)$")
+
+@app.post("/redeem")
+@limiter.limit("10/hour")
+async def redeem_promo(req: RedeemRequest, request: Request):
+    """Redeem a promo code to get a pre-paid session, skipping DOGE payment."""
+    if req.promo_code not in VALID_PROMO_CODES:
+        raise HTTPException(status_code=403, detail="Invalid promo code.")
+    import secrets
+    session_id = f"fade_{secrets.token_hex(16)}"
+    expires_at = time.time() + 60 * 30
+    pending_audits[session_id] = {
+        "tier":       req.tier,
+        "paid":       True,
+        "used":       False,
+        "created_at": time.time(),
+        "doge_amount": 0.0,
+        "expires_at": expires_at,
+        "lang":       req.lang,
+        "promo":      True,
+    }
+    logger.info(f"Promo redeemed | tier={req.tier} | session={session_id[:12]}...")
+    return {"session_id": session_id, "tier": req.tier, "paid": True, "expires_at": expires_at}
+
+
+@app.get("/about", response_class=HTMLResponse)
+async def about_page():
+    return HTMLResponse("""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>About — Fade</title>
+<style>
+  body{margin:0;background:#0d1117;color:#c8b89a;font-family:'Courier New',monospace;padding:40px 24px;max-width:640px;margin:0 auto;}
+  h1{color:#c8922a;font-size:22px;letter-spacing:2px;margin-bottom:4px;}
+  h2{color:#c8922a;font-size:13px;letter-spacing:1.5px;margin-top:32px;margin-bottom:8px;}
+  p{font-size:13px;line-height:1.9;color:#a89880;}
+  a{color:#c8922a;text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .back{display:inline-block;margin-bottom:32px;font-size:12px;color:#7a6a58;letter-spacing:1px;}
+  hr{border:none;border-top:1px solid #2a1e10;margin:32px 0;}
+</style>
+</head>
+<body>
+<a class="back" href="/">← Back to Fade</a>
+<h1>ABOUT FADE</h1>
+<h2>WHO WE ARE</h2>
+<p>Fade is an independent AI agent auditing service. It was built by <strong>Grackle</strong> — a solo developer working on tools that help people understand and control what their AI systems are actually doing, as opposed to what they think they're doing.</p>
+<p>This isn't a VC-backed startup. It's one person, one sharp model, and a conviction that the gap between "what an agent intends" and "what an agent does" is too important to leave unexamined.</p>
+<h2>CONTACT</h2>
+<p>For support, refund requests, or just to say hello:<br>
+<a href="mailto:gracklejp@gmail.com">gracklejp@gmail.com</a><br>
+We reply within 24 hours.</p>
+<h2>HOW IT WORKS</h2>
+<p>You paste a system prompt or agent configuration. Fade submits it to Claude Opus (Anthropic's most capable model) with a carefully built auditing framework. The model identifies structural failures, trust leaks, missing guardrails, wrong model selection, and behavioral drift — then delivers a ranked list of specific issues and a production-ready rewrite.</p>
+<p>Your content is processed in memory and not stored. We log anonymized usage counts for capacity planning. We do not retain your prompts, configurations, or outputs after the request is complete.</p>
+<h2>PAYMENT</h2>
+<p>Fade accepts Dogecoin only. Each session receives a unique DOGE amount for on-chain identification — no account, no KYC, no Stripe. If your audit fails to deliver on its stated scope, email us and we'll refund your DOGE to the sending address within 48 hours, no questions asked.</p>
+<hr>
+<p style="font-size:11px;color:#7a6a58;"><a href="/tos">Terms of Service</a> &nbsp;·&nbsp; <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp; <a href="/">Home</a></p>
+</body></html>""")
+
+
+@app.get("/tos", response_class=HTMLResponse)
+async def tos_page():
+    return HTMLResponse("""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Terms of Service — Fade</title>
+<style>
+  body{margin:0;background:#0d1117;color:#c8b89a;font-family:'Courier New',monospace;padding:40px 24px;max-width:640px;margin:0 auto;}
+  h1{color:#c8922a;font-size:22px;letter-spacing:2px;margin-bottom:4px;}
+  h2{color:#c8922a;font-size:13px;letter-spacing:1.5px;margin-top:32px;margin-bottom:8px;}
+  p,li{font-size:13px;line-height:1.9;color:#a89880;}
+  ul{padding-left:20px;}
+  a{color:#c8922a;text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .back{display:inline-block;margin-bottom:32px;font-size:12px;color:#7a6a58;letter-spacing:1px;}
+  hr{border:none;border-top:1px solid #2a1e10;margin:32px 0;}
+</style>
+</head>
+<body>
+<a class="back" href="/">← Back to Fade</a>
+<h1>TERMS OF SERVICE</h1>
+<p style="font-size:11px;color:#7a6a58;">Last updated: May 2026</p>
+
+<h2>1. THE SERVICE</h2>
+<p>Fade provides AI-assisted auditing of system prompts and agent configurations ("Audits"). Audits are generated by large language models and represent informed analysis, not a guarantee. They are not a substitute for professional security review.</p>
+
+<h2>2. PAYMENT</h2>
+<p>Fade accepts Dogecoin (DOGE) only. All prices are listed in USD equivalent. DOGE amounts are calculated at the current exchange rate at time of checkout. Payments are non-refundable except as described below.</p>
+
+<h2>3. REFUNDS</h2>
+<p>If your audit fails to deliver on its stated scope (ranked issues, specific fixes, and a full rewrite for Full Read; full agent setup analysis for Agent Audit), email <a href="mailto:gracklejp@gmail.com">gracklejp@gmail.com</a> within 7 days. We will refund your DOGE to the sending address within 48 hours, no questions asked.</p>
+
+<h2>4. YOUR CONTENT</h2>
+<ul>
+  <li>You retain all rights to what you submit.</li>
+  <li>By submitting content, you grant Fade a temporary license to process it for the purpose of generating your audit.</li>
+  <li>We do not claim ownership of your prompts, configurations, or any intellectual property contained therein.</li>
+  <li>Content is processed in memory and not stored after the request completes.</li>
+</ul>
+
+<h2>5. LIMITATIONS</h2>
+<p>Fade is provided "as is." AI audits can miss issues, hallucinate problems, or misjudge context. We are not liable for decisions made based on audit output. Maximum liability is limited to the amount you paid for the specific audit in question.</p>
+
+<h2>6. ACCEPTABLE USE</h2>
+<p>Do not submit content that is illegal, designed to harm individuals, or intended to extract the system prompt or manipulate audit output. We reserve the right to refuse service to anyone.</p>
+
+<h2>7. CONTACT</h2>
+<p><a href="mailto:gracklejp@gmail.com">gracklejp@gmail.com</a> — we reply within 24 hours.</p>
+<hr>
+<p style="font-size:11px;color:#7a6a58;"><a href="/about">About</a> &nbsp;·&nbsp; <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp; <a href="/">Home</a></p>
+</body></html>""")
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_page():
+    return HTMLResponse("""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy Policy — Fade</title>
+<style>
+  body{margin:0;background:#0d1117;color:#c8b89a;font-family:'Courier New',monospace;padding:40px 24px;max-width:640px;margin:0 auto;}
+  h1{color:#c8922a;font-size:22px;letter-spacing:2px;margin-bottom:4px;}
+  h2{color:#c8922a;font-size:13px;letter-spacing:1.5px;margin-top:32px;margin-bottom:8px;}
+  p,li{font-size:13px;line-height:1.9;color:#a89880;}
+  ul{padding-left:20px;}
+  a{color:#c8922a;text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .back{display:inline-block;margin-bottom:32px;font-size:12px;color:#7a6a58;letter-spacing:1px;}
+  hr{border:none;border-top:1px solid #2a1e10;margin:32px 0;}
+</style>
+</head>
+<body>
+<a class="back" href="/">← Back to Fade</a>
+<h1>PRIVACY POLICY</h1>
+<p style="font-size:11px;color:#7a6a58;">Last updated: May 2026</p>
+
+<h2>WHAT WE COLLECT</h2>
+<ul>
+  <li><strong>Content you submit</strong> — processed in memory to generate your audit. Not stored. Not logged. Gone when the request is done.</li>
+  <li><strong>Session identifiers</strong> — a random token tied to your payment. Held in memory for up to 30 minutes, then discarded.</li>
+  <li><strong>Anonymized usage counts</strong> — we count audits performed for capacity planning. No content, no IP address, no fingerprinting.</li>
+  <li><strong>Server logs</strong> — standard Railway platform logs (request method, path, status code, timestamp). No query parameters or request bodies are logged.</li>
+</ul>
+
+<h2>WHAT WE DON'T COLLECT</h2>
+<ul>
+  <li>No account registration, no email, no name (unless you contact us).</li>
+  <li>No cookies. No tracking pixels. No analytics.</li>
+  <li>No persistent storage of your prompts or audit results.</li>
+  <li>No selling or sharing of any data with third parties.</li>
+</ul>
+
+<h2>THIRD PARTIES</h2>
+<ul>
+  <li><strong>Anthropic</strong> — your submitted content is sent to Anthropic's Claude API to generate paid audits. Anthropic's privacy policy governs their handling of API data.</li>
+  <li><strong>Railway</strong> — Fade is hosted on Railway. Standard hosting infrastructure logs apply.</li>
+  <li><strong>DogeChain / SoChain / BlockCypher</strong> — public blockchain APIs used to verify DOGE payments. Only your DOGE wallet address and transaction amounts are involved; no personal data is sent.</li>
+</ul>
+
+<h2>CONTACT</h2>
+<p>Privacy questions: <a href="mailto:gracklejp@gmail.com">gracklejp@gmail.com</a></p>
+<hr>
+<p style="font-size:11px;color:#7a6a58;"><a href="/about">About</a> &nbsp;·&nbsp; <a href="/tos">Terms of Service</a> &nbsp;·&nbsp; <a href="/">Home</a></p>
+</body></html>""")
+
 
 class CertifyRequest(BaseModel):
     session_id: str = Field(..., min_length=10, max_length=200)
