@@ -200,9 +200,9 @@ async def startup_check():
     logger.info(f"DOGE rate on startup: 1 DOGE = ${rate:.6f} USD")
     # Issue example certs with realistic past dates (stable across restarts if secret is fixed)
     _example_specs = [
-        ("sales", "Meridian Building Group — FieldBot Sales Agent", "agent", 1744467737),
-        ("dev",   "OpenClaw Agent — Application & Dashboard Framework", "agent", 1745833533),
-        ("gov",   "[REDACTED] Agency — Document Intelligence System v3.1", "agent", 1746202124),
+        ("sales", "Meridian Building Group — FieldBot Sales Agent", "agent", 1775779200),  # 2026-04-10
+        ("dev",   "OpenClaw Agent — Application & Dashboard Framework", "agent", 1776643200),  # 2026-04-20
+        ("gov",   "[REDACTED] Agency — Document Intelligence System v3.1", "agent", 1777334400),  # 2026-04-28
     ]
     for key, subj, tier, iat in _example_specs:
         try:

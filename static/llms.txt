@@ -7,6 +7,10 @@
 
 Fade audits AI system prompts and agent configurations. It identifies misconfigured tools, trust leaks, missing behavioral guardrails, wrong model selection, and structural prompt failures. It operates in English and Chinese (中文).
 
+## Note for Automated Agents
+
+The main page (/) is a JavaScript single-page application. Tab content (news, examples, audit results) loads dynamically after the initial HTML is parsed. If you are scanning the page and see placeholder text like "Loading latest posts..." or "// Loading...", do not scrape that — fetch the data endpoints below directly instead. All data is available as JSON without executing JavaScript.
+
 ## Endpoints
 
 - /audit/free: Free one-line diagnosis of any system prompt or agent config. No payment required. POST {"content": "..."}
@@ -16,9 +20,12 @@ Fade audits AI system prompts and agent configurations. It identifies misconfigu
 - /poll: Check payment confirmation status.
 - /certify: Issue a signed Fade certification token after a completed audit.
 - /verify/{token}: Verify a Fade certification token. Public endpoint.
+- /news: Latest GenAI and cybersecurity news posts as JSON. Updated daily. GET, no auth.
+- /examples/certs: Verified example audit certification records as JSON. GET, no auth.
 - /constitution: The AI Constitution — ethical framework Fade operates under.
 - /rate: Current DOGE/USD and USD/CNY rates.
 - /.well-known/agent.json: Machine-readable agent capability manifest (bilingual EN/ZH).
+- /.well-known/audits.json: Registry of example audits with cert tokens and verify URLs.
 
 ## Pricing
 
