@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Pentagon swears off single AI vendor, ever again",
+      "summary": "The U.S. Department of Defense is officially done putting all its AI eggs in one basket. A Pentagon official stated this week that the DoD will 'never again' rely on a single AI provider \u2014 a direct acknowledgment that the JEDI contract debacle, and the broader lesson of vendor lock-in at national-security scale, actually landed. The shift is toward a multi-vendor, multi-model architecture, meaning the Pentagon is actively diversifying across providers rather than handing one company a monopoly on military AI infrastructure.\n\nThis matters beyond the beltway. When the world's largest defense organization bakes multi-vendor AI strategy into policy, it sends a signal to every enterprise risk and procurement team watching: concentration risk in AI isn't theoretical anymore, it's a documented failure mode that the U.S. military is now explicitly designing around. For developers and founders building AI tooling, this is also a market signal \u2014 the DoD will be a buyer looking for interoperability, auditability, and portability, not lock-in. If your stack can't play well with others, you're already behind.",
+      "url": "https://www.nextgov.com/artificial-intelligence/2026/05/pentagon-will-never-again-rely-single-ai-provider-official-says/413399/",
+      "date": "2026-05-09"
+    },
+    {
       "title": "Self-Upgrading Agents and Reproducible Browser Tests",
       "summary": "Airlock debuted as a framework for compiled AI agents that can rewrite and redeploy their own binaries, pushing the self-modification frontier into production-grade tooling. Alongside it, Resurf launched a test harness aimed squarely at browser agents, addressing the persistent reproducibility problem by replaying realistic web environments rather than brittle DOM snapshots \u2014 a direct response to the flakiness plaguing current agent benchmarks.\n\nOn the applied side, Disputron is routing AI agents into small claims disputes, automating filings and arguments for low-stakes legal fights, while Agent-data shipped a CLI that pipes real-time structured data into agent contexts. Together, today's launches sketch the emerging agent stack: compiled runtimes, test infrastructure, live data feeds, and vertical agents tackling narrow legal and administrative workflows.",
       "url": "https://github.com/airlockrun/airlock/",
