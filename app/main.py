@@ -629,7 +629,7 @@ async def badge_svg(token: str):
   <text x="52" y="23" font-family="Courier New,Courier,monospace" font-size="11" fill="#c8922a" font-weight="bold" letter-spacing="1.5">FADE CERTIFIED</text>
   <text x="52" y="39" font-family="Courier New,Courier,monospace" font-size="9.5" fill="#c8b89a">{tier_lbl}</text>
   <text x="52" y="54" font-family="Courier New,Courier,monospace" font-size="9" fill="#7a6a58">{subject}</text>
-  <text x="52" y="69" font-family="Courier New,Courier,monospace" font-size="8.5" fill="{s_color}">{status} &nbsp; {date_str}</text>
+  <text x="52" y="69" font-family="Courier New,Courier,monospace" font-size="8.5" fill="{s_color}">{status}   {date_str}</text>
 </svg>"""
     return Response(content=svg, media_type="image/svg+xml",
                     headers={"Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff"})
