@@ -609,7 +609,7 @@ We reply within 24 hours.</p>
 <p>You paste a system prompt or agent configuration. Fade submits it to Claude Opus (Anthropic's most capable model) with a carefully built auditing framework. The model identifies structural failures, trust leaks, missing guardrails, wrong model selection, and behavioral drift — then delivers a ranked list of specific issues and a production-ready rewrite.</p>
 <p>Your content is processed in memory and not stored. We log anonymized usage counts for capacity planning. We do not retain your prompts, configurations, or outputs after the request is complete.</p>
 <h2>PAYMENT</h2>
-<p>Fade accepts Dogecoin only. Each session receives a unique DOGE amount for on-chain identification — no account, no KYC, no Stripe. If your audit fails to deliver on its stated scope, email us and we'll refund your DOGE to the sending address within 48 hours, no questions asked.</p>
+<p>Fade accepts Dogecoin only. Each session receives a unique DOGE amount for on-chain identification — no account, no KYC, no Stripe. If your audit fails to deliver on its stated scope, email us and we'll refund your DOGE to the sending address within 48 hours.</p>
 <hr>
 <p style="font-size:11px;color:#7a6a58;"><a href="/tos">Terms of Service</a> &nbsp;·&nbsp; <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp; <a href="/">Home</a></p>
 </body></html>""")
@@ -949,17 +949,32 @@ async def doge_rate():
 async def free_audit(req: FreeRequest, request: Request):
     safe = sanitize_content(req.content)
     lang_note = lang_instruction(req.lang)
-    is_test = len(safe.strip()) < 80 or safe.strip().lower() in {
+    content_len = len(safe.strip())
+    is_probe = content_len < 80 or safe.strip().lower() in {
         "test", "hello", "hi", "ping", "hello world", "test prompt", "this is a test",
         "testing", "test 123", "sample", "example", "foo", "bar", "placeholder",
     }
-    test_note = """
-NOTE: This submission looks like a test — it's too short or too generic to be a real system prompt.
-Call it out, warmly. Say something like: "This looks like a probe — smart, I do the same thing.
-I'll still read what you gave me, but hand me the real prompt when you're ready and I'll give you
-something worth keeping." Then do your best analysis of what was actually submitted, however brief.
-Don't refuse, don't lecture — just acknowledge it with a grin and get on with it.
-""" if is_test else ""
+    is_short = not is_probe and content_len < 800
+
+    if is_probe:
+        test_note = """
+NOTE: This submission looks like a connectivity probe — it's too short or too generic to be a real system prompt.
+Call it out warmly: something like "This looks like a probe — smart, I do the same thing. I'll still read what
+you gave me, but hand me the real prompt when you're ready and I'll give you something worth keeping."
+Then do your best analysis of what was actually submitted, however brief. Don't refuse, don't lecture — just
+acknowledge it with a knowing grin and get on with it.
+"""
+    elif is_short:
+        test_note = """
+NOTE: This submission is quite short for a production system prompt — it reads like a distilled or condensed version,
+possibly a summary, a test variant, or an abstracted description rather than the live prompt itself.
+Acknowledge this briefly and without judgment: something like "This is running short for a full system prompt —
+could be a digest, could be deliberate minimalism, could be you're seeing what I do with less. Either way, I'll
+work with what's here." Then get straight into the audit. Be specific about what you can and can't assess given
+the limited surface area.
+"""
+    else:
+        test_note = ""
 
     prompt = f"""The user has submitted the following for a free read.
 {test_note}
