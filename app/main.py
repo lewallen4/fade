@@ -673,9 +673,11 @@ async def poll_payment(req: PollRequest, request: Request):
 
     expired = time.time() > session.get("expires_at", 0)
     return {
-        "paid":    session.get("paid", False),
-        "expired": expired,
-        "tier":    session.get("tier"),
+        "paid":            session.get("paid", False),
+        "expired":         expired,
+        "tier":            session.get("tier"),
+        "watching_for":    session.get("doge_amount"),
+        "expires_at":      session.get("expires_at"),
     }
 
 

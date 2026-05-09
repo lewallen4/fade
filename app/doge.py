@@ -134,61 +134,82 @@ def claim_tx(tx_id: str) -> bool:
 
 async def check_payment(expected_amount: float, tolerance: float = 0.0001) -> Optional[str]:
     """
-    Check DogeChain API for a recent unclaimed transaction matching the expected
-    amount within tolerance. Returns the tx hash if found, None otherwise.
+    Check for an incoming DOGE transaction matching expected_amount (±tolerance).
+    Returns the txid if found and unclaimed, None otherwise.
 
-    Tolerance of 0.0001 DOGE is wide enough to absorb API rounding/precision
-    differences, but far smaller than the gap between any two session amounts
-    (~142 DOGE for full, ~428 DOGE for agent). Combined with tx_id claiming,
-    this uniquely identifies payments even across concurrent sessions.
+    Primary: SoChain get_tx_received — returns only received txs with exact
+    per-address value in DOGE. No output filtering needed.
+
+    Fallback: BlockCypher — values in satoshis, divide by 1e8.
     """
+
+    # Primary: SoChain (try both domains — they've migrated between the two)
+    for base in ("https://sochain.com", "https://chain.so"):
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    f"{base}/api/v2/get_tx_received/DOGE/{FADE_DOGE_ADDRESS}",
+                )
+            if resp.status_code != 200:
+                continue
+            data = resp.json()
+            if data.get("status") != "success":
+                logger.warning(f"SoChain ({base}) non-success: {data.get('status')}")
+                continue
+
+            txs = data.get("data", {}).get("txs", [])
+            logger.info(f"SoChain returned {len(txs)} received txs | want {expected_amount:.8f} DOGE")
+
+            for tx in txs[:50]:
+                tx_id = tx.get("txid")
+                if not tx_id or tx_id in _used_tx_ids:
+                    continue
+                try:
+                    amount = float(tx.get("value", 0))
+                    logger.debug(f"  TX {tx_id[:16]} → {amount:.8f} DOGE")
+                    if abs(amount - expected_amount) <= tolerance:
+                        logger.info(f"Match found: {tx_id[:16]} | {amount:.8f} DOGE")
+                        return tx_id
+                except (ValueError, TypeError):
+                    continue
+
+            return None  # SoChain responded — no match, don't fall through
+
+        except Exception as e:
+            logger.warning(f"SoChain ({base}) error: {type(e).__name__}: {e}")
+
+    # Fallback: BlockCypher (values in satoshis — divide by 1e8)
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(
-                f"https://dogechain.info/api/v1/address/transactions/{FADE_DOGE_ADDRESS}",
+                f"https://api.blockcypher.com/v1/doge/main/addrs/{FADE_DOGE_ADDRESS}",
+                params={"limit": 50},
             )
-            resp.raise_for_status()
-            data = resp.json()
+        resp.raise_for_status()
+        data = resp.json()
 
-            txs = data.get("transactions", [])
-            logger.info(f"DogeChain returned {len(txs)} transactions, looking for {expected_amount:.8f} DOGE")
+        # txrefs with tx_input_n == -1 are received outputs to our address
+        txrefs = data.get("txrefs", []) + data.get("unconfirmed_txrefs", [])
+        logger.info(f"BlockCypher returned {len(txrefs)} txrefs | want {expected_amount:.8f} DOGE")
 
-            for tx in txs[:20]:
-                tx_id = tx.get("hash") or tx.get("txid") or tx.get("id")
-                if not tx_id:
-                    logger.warning(f"TX has no hash field, keys: {list(tx.keys())}")
-                    continue
-                if tx_id in _used_tx_ids:
-                    continue
-
-                # Check per-output amounts (full transaction detail)
-                matched = False
-                for output in tx.get("outputs", []):
-                    if output.get("address") == FADE_DOGE_ADDRESS:
-                        try:
-                            amount = float(output.get("value", 0))
-                            logger.debug(f"TX {tx_id[:12]} output to us: {amount:.8f} DOGE (want {expected_amount:.8f})")
-                            if abs(amount - expected_amount) <= tolerance:
-                                matched = True
-                                break
-                        except (ValueError, TypeError):
-                            continue
-
-                # Fallback: some API responses carry a top-level value field
-                if not matched and tx.get("outputs") is None:
-                    try:
-                        amount = float(tx.get("value", 0))
-                        logger.debug(f"TX {tx_id[:12]} top-level value: {amount:.8f} DOGE (want {expected_amount:.8f})")
-                        if abs(amount - expected_amount) <= tolerance:
-                            matched = True
-                    except (ValueError, TypeError):
-                        pass
-
-                if matched:
+        for ref in txrefs:
+            if ref.get("tx_input_n", 0) != -1:
+                continue  # skip spent/sent entries
+            tx_id = ref.get("tx_hash")
+            if not tx_id or tx_id in _used_tx_ids:
+                continue
+            try:
+                amount = ref.get("value", 0) / 1e8  # satoshis → DOGE
+                logger.debug(f"  TX {tx_id[:16]} → {amount:.8f} DOGE")
+                if abs(amount - expected_amount) <= tolerance:
+                    logger.info(f"BlockCypher match: {tx_id[:16]} | {amount:.8f} DOGE")
                     return tx_id
+            except (ValueError, TypeError):
+                continue
 
     except Exception as e:
-        logger.error(f"DogeChain check error: {type(e).__name__}: {e}")
+        logger.error(f"BlockCypher fallback error: {type(e).__name__}: {e}")
+
     return None
 
 async def watch_payment(
