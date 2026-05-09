@@ -132,14 +132,15 @@ def claim_tx(tx_id: str) -> bool:
     return True
 
 
-async def check_payment(expected_amount: float, tolerance: float = 0.000005) -> Optional[str]:
+async def check_payment(expected_amount: float, tolerance: float = 0.0001) -> Optional[str]:
     """
     Check DogeChain API for a recent unclaimed transaction matching the expected
     amount within tolerance. Returns the tx hash if found, None otherwise.
 
-    Tolerance is intentionally tight (0.000005) — just enough to absorb float
-    precision differences. It is NOT wide enough to overlap with adjacent dust
-    values, so each session's amount is uniquely identifiable.
+    Tolerance of 0.0001 DOGE is wide enough to absorb API rounding/precision
+    differences, but far smaller than the gap between any two session amounts
+    (~142 DOGE for full, ~428 DOGE for agent). Combined with tx_id claiming,
+    this uniquely identifies payments even across concurrent sessions.
     """
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -150,20 +151,44 @@ async def check_payment(expected_amount: float, tolerance: float = 0.000005) -> 
             data = resp.json()
 
             txs = data.get("transactions", [])
+            logger.info(f"DogeChain returned {len(txs)} transactions, looking for {expected_amount:.8f} DOGE")
+
             for tx in txs[:20]:
                 tx_id = tx.get("hash") or tx.get("txid") or tx.get("id")
-                if not tx_id or tx_id in _used_tx_ids:
+                if not tx_id:
+                    logger.warning(f"TX has no hash field, keys: {list(tx.keys())}")
                     continue
+                if tx_id in _used_tx_ids:
+                    continue
+
+                # Check per-output amounts (full transaction detail)
+                matched = False
                 for output in tx.get("outputs", []):
                     if output.get("address") == FADE_DOGE_ADDRESS:
                         try:
                             amount = float(output.get("value", 0))
+                            logger.debug(f"TX {tx_id[:12]} output to us: {amount:.8f} DOGE (want {expected_amount:.8f})")
                             if abs(amount - expected_amount) <= tolerance:
-                                return tx_id
+                                matched = True
+                                break
                         except (ValueError, TypeError):
                             continue
+
+                # Fallback: some API responses carry a top-level value field
+                if not matched and tx.get("outputs") is None:
+                    try:
+                        amount = float(tx.get("value", 0))
+                        logger.debug(f"TX {tx_id[:12]} top-level value: {amount:.8f} DOGE (want {expected_amount:.8f})")
+                        if abs(amount - expected_amount) <= tolerance:
+                            matched = True
+                    except (ValueError, TypeError):
+                        pass
+
+                if matched:
+                    return tx_id
+
     except Exception as e:
-        logger.error(f"DogeChain check error: {type(e).__name__}")
+        logger.error(f"DogeChain check error: {type(e).__name__}: {e}")
     return None
 
 async def watch_payment(
