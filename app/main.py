@@ -9,7 +9,8 @@ import anthropic
 import httpx
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, Response
+from datetime import datetime as _dt, timezone as _tz
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -128,15 +129,20 @@ FADE_CERT_SECRET = os.environ.get("FADE_CERT_SECRET", hashlib.sha256(b"fade-defa
 
 CERT_TTL_SECONDS = int(os.environ.get("CERT_TTL_DAYS", "90")) * 86400
 
-def issue_cert(subject: str, tier: str, score: str) -> str:
+# Example certs are issued at startup so they have real verifiable tokens.
+_example_certs: dict = {}
+
+def issue_cert(subject: str, tier: str, score: str, issued_at: int = None) -> str:
     """Issue a signed certification token. Self-contained, no DB needed.
     Subject is base64-encoded to prevent pipe-character injection attacks.
     Token includes expiry. Signature is 32 hex chars (128-bit security).
+    Optional issued_at allows backdating (used for example certs).
     """
     if not subject or len(subject) > 200:
         raise ValueError("Invalid subject")
     subject_b64 = base64.urlsafe_b64encode(subject.encode()).decode().rstrip("=")
-    issued_at = int(time.time())
+    if issued_at is None:
+        issued_at = int(time.time())
     expires_at = issued_at + CERT_TTL_SECONDS
     payload = f"{subject_b64}|{tier}|{score}|{issued_at}|{expires_at}"
     sig = hmac.new(FADE_CERT_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[:32]
@@ -192,6 +198,27 @@ async def startup_check():
     # Warm the DOGE rate cache on startup
     rate = await get_doge_rate()
     logger.info(f"DOGE rate on startup: 1 DOGE = ${rate:.6f} USD")
+    # Issue example certs with realistic past dates (stable across restarts if secret is fixed)
+    _example_specs = [
+        ("sales", "Meridian Building Group — FieldBot Sales Agent", "agent", 1744467737),
+        ("dev",   "OpenClaw Agent — Application & Dashboard Framework", "agent", 1745833533),
+        ("gov",   "[REDACTED] Agency — Document Intelligence System v3.1", "agent", 1746202124),
+    ]
+    for key, subj, tier, iat in _example_specs:
+        try:
+            tok = issue_cert(subj, tier, "reviewed", issued_at=iat)
+            _example_certs[key] = {
+                "token":      tok,
+                "subject":    subj,
+                "tier":       tier,
+                "issued_at":  iat,
+                "verify_url": f"{BASE_URL}/verify/{tok}",
+                "badge_url":  f"{BASE_URL}/badge/{tok}.svg",
+                "cert_url":   f"{BASE_URL}/cert/{tok}",
+            }
+        except Exception as e:
+            logger.error(f"Example cert init failed for {key}: {e}")
+    logger.info(f"Example certs initialized: {list(_example_certs.keys())}")
     # Background tasks
     asyncio.create_task(rate_refresh_loop())
     asyncio.create_task(_session_cleanup_loop())
@@ -236,6 +263,7 @@ class AuditRequest(BaseModel):
     content:    str = Field(..., min_length=5, max_length=8000)
     session_id: str = Field(..., min_length=10, max_length=200)
     lang:       str = Field(default='en', pattern='^(en|zh)$')
+    subject:    str = Field(default='', max_length=120)
 
     @field_validator("session_id")
     @classmethod
@@ -570,6 +598,158 @@ async def verify_token(token: str):
     })
 
 
+def _svg_escape(s: str) -> str:
+    return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace('"',"&quot;")
+
+@app.get("/badge/{token}.svg")
+async def badge_svg(token: str):
+    """Verifiable SVG badge. Embed in README, agent manifest, or website."""
+    result = verify_cert(token) if len(token) <= 2000 else None
+    valid = bool(result and result.get("valid"))
+    if valid:
+        subject   = _svg_escape((result["subject"][:34] + "…") if len(result["subject"]) > 34 else result["subject"])
+        tier_lbl  = _svg_escape({"full": "Full Read", "agent": "Agent Audit"}.get(result["tier"], result["tier"]))
+        date_str  = _dt.fromtimestamp(result["issued_at"], tz=_tz.utc).strftime("%Y-%m-%d")
+        bar_color = "#3aaa6a"
+        status    = "◆ VERIFIED"
+        s_color   = "#3aaa6a"
+    else:
+        subject   = "Invalid or expired"
+        tier_lbl  = ""
+        date_str  = ""
+        bar_color = "#6a2020"
+        status    = "◆ NOT VERIFIED"
+        s_color   = "#8a4040"
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="264" height="80">
+  <rect width="264" height="80" rx="3" fill="#0d1117"/>
+  <rect width="264" height="80" rx="3" fill="none" stroke="#2a1e10" stroke-width="1"/>
+  <rect x="0" y="0" width="4" height="80" rx="2" fill="{bar_color}"/>
+  <polygon points="20,40 30,27 40,40 30,53" fill="none" stroke="#c8922a" stroke-width="1.5"/>
+  <polygon points="24,40 30,32 36,40 30,48" fill="#c8922a"/>
+  <text x="52" y="23" font-family="Courier New,Courier,monospace" font-size="11" fill="#c8922a" font-weight="bold" letter-spacing="1.5">FADE CERTIFIED</text>
+  <text x="52" y="39" font-family="Courier New,Courier,monospace" font-size="9.5" fill="#c8b89a">{tier_lbl}</text>
+  <text x="52" y="54" font-family="Courier New,Courier,monospace" font-size="9" fill="#7a6a58">{subject}</text>
+  <text x="52" y="69" font-family="Courier New,Courier,monospace" font-size="8.5" fill="{s_color}">{status} &nbsp; {date_str}</text>
+</svg>"""
+    return Response(content=svg, media_type="image/svg+xml",
+                    headers={"Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff"})
+
+
+@app.get("/cert/{token}", response_class=HTMLResponse)
+async def cert_page(token: str):
+    """Human-readable certification page. Verifies token and displays full cert details."""
+    result = verify_cert(token) if len(token) <= 2000 else None
+    if not result:
+        valid, subject, tier_lbl, issued_str, expires_str, status_cls, status_txt = (
+            False, "Unknown", "", "", "", "cert-invalid", "◆ INVALID — Token tampered or unrecognized."
+        )
+    elif not result.get("valid"):
+        valid = False
+        subject   = result.get("subject", "Unknown")
+        tier_lbl  = ""
+        issued_str = ""
+        expires_str = ""
+        status_cls = "cert-expired"
+        status_txt = "◆ EXPIRED — This certification is no longer valid."
+    else:
+        valid = True
+        subject    = result["subject"]
+        tier_lbl   = {"full": "Full Read", "agent": "Agent Audit"}.get(result["tier"], result["tier"])
+        issued_str = _dt.fromtimestamp(result["issued_at"],  tz=_tz.utc).strftime("%B %d, %Y")
+        expires_str= _dt.fromtimestamp(result["expires_at"], tz=_tz.utc).strftime("%B %d, %Y")
+        status_cls = "cert-valid"
+        status_txt = "◆ VERIFIED — This certification is authentic and current."
+    badge_url  = f"{BASE_URL}/badge/{token}.svg"
+    verify_url = f"{BASE_URL}/verify/{token}"
+    embed = f'{{"fade_certified":{{"verify":"{verify_url}","issued_by":"Fade Agent Auditor","tier":"{tier_lbl}"}}}}'
+    html = f"""<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="fade:certified" content="{'true' if valid else 'false'}">
+<meta name="fade:subject" content="{subject}">
+<meta name="fade:tier" content="{tier_lbl}">
+<title>FADE CERT — {subject[:50]}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@600&display=swap');
+  :root{{--bg:#080b0f;--bg2:#0d1117;--amber:#c8922a;--amber-dim:#7a5518;--green:#3aaa6a;--red:#8a3030;--text:#c8b89a;--dim:#6a5a48;--border:#1e2830;--ba:#3a2810;}}
+  *{{margin:0;padding:0;box-sizing:border-box;}}
+  body{{background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:13px;line-height:1.7;min-height:100vh;padding:40px 24px;}}
+  .wrap{{max-width:680px;margin:0 auto;}}
+  .logo{{font-family:'Rajdhani',sans-serif;font-size:36px;font-weight:600;color:var(--amber);letter-spacing:.2em;text-shadow:0 0 30px rgba(200,146,42,.4);margin-bottom:4px;}}
+  .logo-sub{{font-size:10px;color:var(--dim);letter-spacing:.3em;text-transform:uppercase;margin-bottom:36px;}}
+  .status{{font-size:13px;padding:14px 18px;border-left:3px solid;margin-bottom:30px;}}
+  .cert-valid{{border-color:var(--green);color:var(--green);background:rgba(58,170,106,.06);}}
+  .cert-expired{{border-color:var(--amber);color:var(--amber);background:rgba(200,146,42,.06);}}
+  .cert-invalid{{border-color:var(--red);color:var(--red);background:rgba(138,48,48,.06);}}
+  .field{{margin-bottom:20px;}}
+  .field-label{{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:4px;}}
+  .field-val{{font-size:15px;color:#e8d8ba;}}
+  .field-val.mono{{font-size:13px;color:var(--text);}}
+  .divider{{border:none;border-top:1px solid var(--border);margin:28px 0;}}
+  .section-title{{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}}
+  .code-block{{background:var(--bg2);border:1px solid var(--border);padding:14px 16px;font-size:11px;color:var(--dim);word-break:break-all;line-height:1.8;}}
+  .badge-wrap{{margin:12px 0;}}
+  .badge-wrap img{{display:block;border:1px solid var(--ba);}}
+  .copy-btn{{background:transparent;border:1px solid var(--amber-dim);color:var(--amber);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.1em;padding:6px 14px;cursor:pointer;text-transform:uppercase;margin-top:8px;}}
+  .copy-btn:hover{{background:var(--ba);}}
+  .back{{font-size:11px;color:var(--dim);text-decoration:none;letter-spacing:.1em;}}
+  .back:hover{{color:var(--amber);}}
+  .grid{{display:grid;grid-template-columns:1fr 1fr;gap:20px;}}
+</style></head><body><div class="wrap">
+  <div class="logo">FADE</div>
+  <div class="logo-sub">Agent Auditor &nbsp;/&nbsp; Certification Record</div>
+  <div class="status {status_cls}">{status_txt}</div>
+  <div class="field"><div class="field-label">Subject</div><div class="field-val">{subject}</div></div>
+  <div class="field"><div class="field-label">Tier</div><div class="field-val">{tier_lbl}</div></div>
+  <div class="grid">
+    <div class="field"><div class="field-label">Issued</div><div class="field-val">{issued_str}</div></div>
+    <div class="field"><div class="field-label">Expires</div><div class="field-val">{expires_str}</div></div>
+  </div>
+  <hr class="divider">
+  <div class="section-title">Badge</div>
+  <div class="badge-wrap"><img src="{badge_url}" alt="FADE Certified Badge" width="264" height="80"></div>
+  <button class="copy-btn" onclick="navigator.clipboard.writeText('[![FADE Certified]({badge_url})]({verify_url})').then(()=>this.textContent='COPIED ✓').catch(()=>0)">Copy Badge Markdown →</button>
+  <hr class="divider">
+  <div class="section-title">Agent Manifest Snippet</div>
+  <div class="code-block" id="embedCode">{embed}</div>
+  <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('embedCode').textContent).then(()=>this.textContent='COPIED ✓').catch(()=>0)" style="margin-top:8px;">Copy Snippet →</button>
+  <hr class="divider">
+  <div class="section-title">Machine Verification</div>
+  <div class="code-block">GET {verify_url}</div>
+  <hr class="divider">
+  <a href="{BASE_URL}" class="back">← Back to Fade</a>
+</div></body></html>"""
+    return HTMLResponse(content=html)
+
+
+@app.get("/examples/certs")
+async def examples_certs():
+    """Machine-readable example cert registry. Used by the examples tab to load real tokens."""
+    return JSONResponse(_example_certs)
+
+
+@app.get("/.well-known/audits.json")
+async def well_known_audits():
+    """Agent-discoverable audit registry. Lists completed public example audits."""
+    audits = []
+    for key, cert in _example_certs.items():
+        audits.append({
+            "subject":    cert["subject"],
+            "tier":       cert["tier"],
+            "issued_at":  cert["issued_at"],
+            "cert_url":   cert["cert_url"],
+            "verify_url": cert["verify_url"],
+            "badge_url":  cert["badge_url"],
+            "auditor":    "Fade Agent Auditor",
+            "auditor_url": BASE_URL,
+        })
+    return JSONResponse({
+        "auditor":     "Fade",
+        "auditor_url": BASE_URL,
+        "schema":      "fade/audit-registry/v1",
+        "audits":      audits,
+    })
+
+
 @app.get("/rate")
 async def doge_rate():
     """Current DOGE/USD + USD/RMB rates — useful for agents and CN frontend."""
@@ -594,9 +774,17 @@ async def doge_rate():
 async def free_audit(req: FreeRequest, request: Request):
     safe = sanitize_content(req.content)
     lang_note = lang_instruction(req.lang)
-    prompt = f"""The user has submitted the following for a free read. Give them ONE sharp observation — the single biggest problem or gap — in two sentences max. First sentence: the diagnosis. Second sentence: the direction. Then one line offering the full read.
+    prompt = f"""The user has submitted the following for a free read.
 
-Keep it in character. Warm, direct, unhurried.
+Give them three to four sentences total:
+- First sentence: the single sharpest diagnosis. Name the specific problem, not the category. Be concrete — reference what's actually in front of you.
+- Second sentence: why it matters. What breaks because of this.
+- Third sentence (optional but good): the direction of the fix — not the fix itself, just the heading.
+- Final line: a brief, in-character offer of the full read. Warm, not pushy.
+
+Do not summarize everything you see. Pick the one thing that, if fixed, would matter most. If the submission is genuinely strong, say so honestly and name what you'd still tighten.
+
+Keep it in character. Warm, direct, a little wry. This is a taste, not a lecture.
 {lang_note}
 
 Submitted content:
@@ -688,29 +876,40 @@ async def full_audit(req: AuditRequest, request: Request):
     safe = sanitize_content(req.content)
 
     lang_note = lang_instruction(req.lang)
-    prompt = f"""The user has paid for a full system prompt audit. Give them the complete read — and then give them the actual goods.
+    prompt = f"""The user has paid for a full system prompt audit. Give them the complete read — then give them the actual rewrite.
 
 Structure your response as:
 
-1. **The Hand You Dealt** — one sentence summary of what they've submitted
+1. **The Hand You Dealt** — two to three sentences. What they submitted, what it's trying to do, and the single biggest gap between what it intends and what it will actually do. Be specific. Reference the actual content in front of you.
 
-2. **What's Working** — specific things that are genuinely good. If nothing is, say so honestly but without cruelty.
+2. **What's Working** — be genuinely specific. Name the exact phrases or structural choices that are solid and explain why they work. If nothing is working, say so without cruelty — "there's not much to save here, but that's okay, we're starting fresh." Don't manufacture praise.
 
-3. **The Problems, Ranked** — critical to minor. Each problem gets one line naming it and one line fixing it. Be specific — name the exact phrase or gap, not a category.
+3. **The Problems, Ranked** — go critical to minor. For each problem: one sentence naming the specific issue (quote the exact language that causes it if relevant), one sentence on what breaks because of it, one sentence on the fix. Minimum four problems. Do not group or skim.
 
-4. **The Rewrite** — Rewrite the full prompt from scratch with all fixes applied. Always do this, regardless of length. Format it as a clean code block they can copy directly. This is what they paid for — don't give them a summary of what you'd change, give them the thing itself. Write it so they can paste it in and go.
+4. **The One Thing** — if they only fix one item before deploying this, what is it? One sentence, bold, decisive.
 
-Stay in character throughout. Warm, direct, a little wry. Never cruel to the person — critique the work, not the builder.
-If the setup is genuinely solid, say so clearly and still offer a polished version.
+5. **The Rewrite** — rewrite the full prompt from scratch with every fix applied. Always deliver this regardless of length. Format it as a clean, labeled code block they can copy and use immediately. This is the deliverable. Don't summarize what you'd change — write the thing. It should be production-ready: clear identity, scope, constraints, tone, escalation, and anything else the role demands.
+
+Stay in character throughout. Warm, direct, a little wry about the situation. Never cruel to the builder.
+If the prompt is genuinely solid, say so clearly — give them the honest grade, then still deliver a polished version.
 {lang_note}
 
 Submitted content:
 {safe}"""
 
-    audit = call_fade_paid(prompt, max_tokens=2500)
+    audit = call_fade_paid(prompt, max_tokens=3000)
     mark_used(req.session_id)
+    cert_subject = req.subject.strip() or req.content.split('\n')[0].strip()[:80] or "System Prompt"
+    cert_token   = issue_cert(cert_subject, "full", "reviewed")
     logger.info(f"Full audit delivered | session={req.session_id[:12]}...")
-    return {"audit": audit, "constitution_reference": f"{BASE_URL}/constitution"}
+    return {
+        "audit":                  audit,
+        "cert_token":             cert_token,
+        "cert_url":               f"{BASE_URL}/cert/{cert_token}",
+        "badge_url":              f"{BASE_URL}/badge/{cert_token}.svg",
+        "verify_url":             f"{BASE_URL}/verify/{cert_token}",
+        "constitution_reference": f"{BASE_URL}/constitution",
+    }
 
 
 @app.post("/audit/agent")
@@ -720,39 +919,52 @@ async def agent_audit(req: AuditRequest, request: Request):
     safe = sanitize_content(req.content)
 
     lang_note = lang_instruction(req.lang)
-    prompt = f"""The user has paid for a full agent setup audit. This is the deep read — and then the deliverables.
+    prompt = f"""The user has paid for a full agent setup audit. This is the deep read. Do it justice.
 
 Structure your response as:
 
-1. **The Setup Read** — what this agent is supposed to do vs what it will actually do. Be specific about the gap.
+1. **The Setup Read** — three to five sentences. What is this agent supposed to do, what will it actually do, and what is the specific delta between those two things? Name the domain, the intended users, the failure mode you'd bet money on. Be precise — you're reading their work, not describing a category of agent.
 
-2. **The Breaks** — every concrete failure point: loops with no exit, trust gaps, missing fallbacks, unclear scope, model mismatch. For each one: name it in a sentence, fix it in a sentence.
+2. **The Breaks** — every failure point you can find. Not a list of categories — a list of specific problems with specific consequences. For each one:
+   - Name it in one sentence. Quote the exact language that creates the problem if it's in the submission.
+   - Explain what breaks in one sentence.
+   - Give the fix in one sentence.
+   Minimum five breaks. If the agent has more, find them all.
 
-3. **The Trust Audit** — what this agent can access that it shouldn't, and what it needs access to that it doesn't have. If permissions aren't specified, call that out as the gap it is.
+3. **The Trust Audit** — examine every permission, tool access, and data handling claim. What can this agent do that it shouldn't be able to do? What should it have access to that isn't granted? If permissions aren't defined at all, say that clearly — a permission vacuum is its own vulnerability.
 
-4. **The Model Note** — is this the right model for this task? Consider cost, capability, context needs, and latency. If they should be on a different model, say which one and why.
+4. **The Model Note** — what model is this agent actually running on, or what model fits its requirements? Consider: reasoning depth, context window, cost profile, latency needs, and safety alignment. If there's a mismatch between what the soul demands and what the model can deliver, name it. Be specific about model families — don't hedge with "a capable model."
 
-5. **The Fix Priority** — ordered list: fix this first, then this, then this. No more than five items. The person reading this has things to do.
+5. **The Fix Priority** — five items, ordered. First through fifth. The person reading this is about to go do the work — make the list actionable and unambiguous.
 
-6. **The Rebuilt Materials** — This is what separates a real read from a lecture. Deliver the actual improved files, ready to use:
-   - If they submitted a soul.md or identity document: rewrite it completely with all fixes applied. Label it `## soul.md` and put it in a code block.
-   - If they submitted a system prompt: rewrite it fully. Label it `## system_prompt.md` and put it in a code block.
-   - If they submitted agent config, tool lists, or anything else structural: rewrite or annotate each one. Label them clearly.
-   - If the original was a mix of things, sort them out and deliver each piece clean.
-   - Write these as files someone can copy, save, and deploy. Not summaries. Not "here's what it should say." The thing itself.
+6. **The Rebuilt Materials** — deliver the actual improved files. This is what they paid for.
+   - Rewrite every document they submitted with all fixes applied. If they sent a soul.md, give them back a better soul.md. If they sent a system prompt, give them the rewritten system prompt. If they sent both, give them both.
+   - Label each file clearly (e.g., `## soul.md`, `## system_prompt.md`).
+   - Format each as a clean code block ready to copy, save, and deploy. Not bullets describing what to change — the actual file.
+   - If something in the original was genuinely good, keep it. You're improving, not replacing everything for sport.
+   - Write it at a quality level you'd be proud of. This goes in production.
 
-Stay in character throughout. Warm, direct, exact. This is the most thorough thing you do — honor that.
-Real praise where it's earned. Real critique where it's needed. Never cruel to the builder.
-If this agent will interact with people, you may briefly mention the AI Constitution as a foundation worth knowing — once, without pressure.
+Stay in character throughout. Warm, direct, precise. This is the most thorough thing you do.
+Real praise where earned. Real critique everywhere else. Never cruel to the builder — the work is fair game, the person is not.
+If this agent will interact with people, mention the AI Constitution once — briefly, without pressure. It's worth knowing.
 {lang_note}
 
 Submitted content:
 {safe}"""
 
-    audit = call_fade_paid(prompt, max_tokens=4000)
+    audit = call_fade_paid(prompt, max_tokens=5000)
     mark_used(req.session_id)
+    cert_subject = req.subject.strip() or req.content.split('\n')[0].strip()[:80] or "Agent Configuration"
+    cert_token   = issue_cert(cert_subject, "agent", "reviewed")
     logger.info(f"Agent audit delivered | session={req.session_id[:12]}...")
-    return {"audit": audit, "constitution_reference": f"{BASE_URL}/constitution"}
+    return {
+        "audit":                  audit,
+        "cert_token":             cert_token,
+        "cert_url":               f"{BASE_URL}/cert/{cert_token}",
+        "badge_url":              f"{BASE_URL}/badge/{cert_token}.svg",
+        "verify_url":             f"{BASE_URL}/verify/{cert_token}",
+        "constitution_reference": f"{BASE_URL}/constitution",
+    }
 
 
 # =============================================================================
