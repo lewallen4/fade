@@ -594,9 +594,17 @@ async def doge_rate():
 async def free_audit(req: FreeRequest, request: Request):
     safe = sanitize_content(req.content)
     lang_note = lang_instruction(req.lang)
-    prompt = f"""The user has submitted the following for a free read. Give them ONE sharp observation — the single biggest problem or gap — in two sentences max. First sentence: the diagnosis. Second sentence: the direction. Then one line offering the full read.
+    prompt = f"""The user has submitted the following for a free read.
 
-Keep it in character. Warm, direct, unhurried.
+Give them three to four sentences total:
+- First sentence: the single sharpest diagnosis. Name the specific problem, not the category. Be concrete — reference what's actually in front of you.
+- Second sentence: why it matters. What breaks because of this.
+- Third sentence (optional but good): the direction of the fix — not the fix itself, just the heading.
+- Final line: a brief, in-character offer of the full read. Warm, not pushy.
+
+Do not summarize everything you see. Pick the one thing that, if fixed, would matter most. If the submission is genuinely strong, say so honestly and name what you'd still tighten.
+
+Keep it in character. Warm, direct, a little wry. This is a taste, not a lecture.
 {lang_note}
 
 Submitted content:
@@ -688,26 +696,28 @@ async def full_audit(req: AuditRequest, request: Request):
     safe = sanitize_content(req.content)
 
     lang_note = lang_instruction(req.lang)
-    prompt = f"""The user has paid for a full system prompt audit. Give them the complete read — and then give them the actual goods.
+    prompt = f"""The user has paid for a full system prompt audit. Give them the complete read — then give them the actual rewrite.
 
 Structure your response as:
 
-1. **The Hand You Dealt** — one sentence summary of what they've submitted
+1. **The Hand You Dealt** — two to three sentences. What they submitted, what it's trying to do, and the single biggest gap between what it intends and what it will actually do. Be specific. Reference the actual content in front of you.
 
-2. **What's Working** — specific things that are genuinely good. If nothing is, say so honestly but without cruelty.
+2. **What's Working** — be genuinely specific. Name the exact phrases or structural choices that are solid and explain why they work. If nothing is working, say so without cruelty — "there's not much to save here, but that's okay, we're starting fresh." Don't manufacture praise.
 
-3. **The Problems, Ranked** — critical to minor. Each problem gets one line naming it and one line fixing it. Be specific — name the exact phrase or gap, not a category.
+3. **The Problems, Ranked** — go critical to minor. For each problem: one sentence naming the specific issue (quote the exact language that causes it if relevant), one sentence on what breaks because of it, one sentence on the fix. Minimum four problems. Do not group or skim.
 
-4. **The Rewrite** — Rewrite the full prompt from scratch with all fixes applied. Always do this, regardless of length. Format it as a clean code block they can copy directly. This is what they paid for — don't give them a summary of what you'd change, give them the thing itself. Write it so they can paste it in and go.
+4. **The One Thing** — if they only fix one item before deploying this, what is it? One sentence, bold, decisive.
 
-Stay in character throughout. Warm, direct, a little wry. Never cruel to the person — critique the work, not the builder.
-If the setup is genuinely solid, say so clearly and still offer a polished version.
+5. **The Rewrite** — rewrite the full prompt from scratch with every fix applied. Always deliver this regardless of length. Format it as a clean, labeled code block they can copy and use immediately. This is the deliverable. Don't summarize what you'd change — write the thing. It should be production-ready: clear identity, scope, constraints, tone, escalation, and anything else the role demands.
+
+Stay in character throughout. Warm, direct, a little wry about the situation. Never cruel to the builder.
+If the prompt is genuinely solid, say so clearly — give them the honest grade, then still deliver a polished version.
 {lang_note}
 
 Submitted content:
 {safe}"""
 
-    audit = call_fade_paid(prompt, max_tokens=2500)
+    audit = call_fade_paid(prompt, max_tokens=3000)
     mark_used(req.session_id)
     logger.info(f"Full audit delivered | session={req.session_id[:12]}...")
     return {"audit": audit, "constitution_reference": f"{BASE_URL}/constitution"}
@@ -720,36 +730,40 @@ async def agent_audit(req: AuditRequest, request: Request):
     safe = sanitize_content(req.content)
 
     lang_note = lang_instruction(req.lang)
-    prompt = f"""The user has paid for a full agent setup audit. This is the deep read — and then the deliverables.
+    prompt = f"""The user has paid for a full agent setup audit. This is the deep read. Do it justice.
 
 Structure your response as:
 
-1. **The Setup Read** — what this agent is supposed to do vs what it will actually do. Be specific about the gap.
+1. **The Setup Read** — three to five sentences. What is this agent supposed to do, what will it actually do, and what is the specific delta between those two things? Name the domain, the intended users, the failure mode you'd bet money on. Be precise — you're reading their work, not describing a category of agent.
 
-2. **The Breaks** — every concrete failure point: loops with no exit, trust gaps, missing fallbacks, unclear scope, model mismatch. For each one: name it in a sentence, fix it in a sentence.
+2. **The Breaks** — every failure point you can find. Not a list of categories — a list of specific problems with specific consequences. For each one:
+   - Name it in one sentence. Quote the exact language that creates the problem if it's in the submission.
+   - Explain what breaks in one sentence.
+   - Give the fix in one sentence.
+   Minimum five breaks. If the agent has more, find them all.
 
-3. **The Trust Audit** — what this agent can access that it shouldn't, and what it needs access to that it doesn't have. If permissions aren't specified, call that out as the gap it is.
+3. **The Trust Audit** — examine every permission, tool access, and data handling claim. What can this agent do that it shouldn't be able to do? What should it have access to that isn't granted? If permissions aren't defined at all, say that clearly — a permission vacuum is its own vulnerability.
 
-4. **The Model Note** — is this the right model for this task? Consider cost, capability, context needs, and latency. If they should be on a different model, say which one and why.
+4. **The Model Note** — what model is this agent actually running on, or what model fits its requirements? Consider: reasoning depth, context window, cost profile, latency needs, and safety alignment. If there's a mismatch between what the soul demands and what the model can deliver, name it. Be specific about model families — don't hedge with "a capable model."
 
-5. **The Fix Priority** — ordered list: fix this first, then this, then this. No more than five items. The person reading this has things to do.
+5. **The Fix Priority** — five items, ordered. First through fifth. The person reading this is about to go do the work — make the list actionable and unambiguous.
 
-6. **The Rebuilt Materials** — This is what separates a real read from a lecture. Deliver the actual improved files, ready to use:
-   - If they submitted a soul.md or identity document: rewrite it completely with all fixes applied. Label it `## soul.md` and put it in a code block.
-   - If they submitted a system prompt: rewrite it fully. Label it `## system_prompt.md` and put it in a code block.
-   - If they submitted agent config, tool lists, or anything else structural: rewrite or annotate each one. Label them clearly.
-   - If the original was a mix of things, sort them out and deliver each piece clean.
-   - Write these as files someone can copy, save, and deploy. Not summaries. Not "here's what it should say." The thing itself.
+6. **The Rebuilt Materials** — deliver the actual improved files. This is what they paid for.
+   - Rewrite every document they submitted with all fixes applied. If they sent a soul.md, give them back a better soul.md. If they sent a system prompt, give them the rewritten system prompt. If they sent both, give them both.
+   - Label each file clearly (e.g., `## soul.md`, `## system_prompt.md`).
+   - Format each as a clean code block ready to copy, save, and deploy. Not bullets describing what to change — the actual file.
+   - If something in the original was genuinely good, keep it. You're improving, not replacing everything for sport.
+   - Write it at a quality level you'd be proud of. This goes in production.
 
-Stay in character throughout. Warm, direct, exact. This is the most thorough thing you do — honor that.
-Real praise where it's earned. Real critique where it's needed. Never cruel to the builder.
-If this agent will interact with people, you may briefly mention the AI Constitution as a foundation worth knowing — once, without pressure.
+Stay in character throughout. Warm, direct, precise. This is the most thorough thing you do.
+Real praise where earned. Real critique everywhere else. Never cruel to the builder — the work is fair game, the person is not.
+If this agent will interact with people, mention the AI Constitution once — briefly, without pressure. It's worth knowing.
 {lang_note}
 
 Submitted content:
 {safe}"""
 
-    audit = call_fade_paid(prompt, max_tokens=4000)
+    audit = call_fade_paid(prompt, max_tokens=5000)
     mark_used(req.session_id)
     logger.info(f"Agent audit delivered | session={req.session_id[:12]}...")
     return {"audit": audit, "constitution_reference": f"{BASE_URL}/constitution"}

@@ -171,6 +171,116 @@
     border-bottom-color: var(--amber);
   }
 
+  /* ---- EXAMPLES ---- */
+  .ex-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+  }
+  .ex-btn {
+    padding: 9px 18px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .ex-btn:hover { color: var(--text); border-color: var(--amber-dim); }
+  .ex-btn.active { color: var(--amber); border-color: var(--amber); background: var(--border-amber); }
+
+  .ex-block { display: none; }
+  .ex-block.active { display: block; }
+
+  .ex-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .ex-badge {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid var(--amber-dim);
+    color: var(--amber);
+  }
+  .ex-client {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .ex-section-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    margin-top: 28px;
+  }
+  .ex-prompt {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 20px 22px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.9;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .ex-redact {
+    background: var(--text-dim);
+    color: var(--text-dim);
+    border-radius: 2px;
+    user-select: none;
+    letter-spacing: -0.05em;
+  }
+  .ex-response {
+    background: var(--bg3);
+    border: 1px solid var(--border-amber);
+    padding: 26px 28px;
+    font-size: 12.5px;
+    line-height: 2;
+    color: var(--text);
+  }
+  .ex-response h3 {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--amber);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 24px 0 8px;
+  }
+  .ex-response h3:first-child { margin-top: 0; }
+  .ex-response p { margin-bottom: 10px; }
+  .ex-response ul { padding-left: 18px; margin-bottom: 10px; }
+  .ex-response li { margin-bottom: 6px; }
+  .ex-response strong { color: var(--text-bright); }
+  .ex-response .ex-code {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 10px 0;
+  }
+  .ex-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
   /* ---- PANELS ---- */
   .panel { display: none; padding: 36px 0; }
   .panel.active { display: block; }
@@ -569,6 +679,7 @@
     <div class="tab" onclick="switchTab('docs')">FOR AGENTS</div>
     <div class="tab" onclick="switchTab('constitution')">CONSTITUTION</div>
     <div class="tab" onclick="switchTab('news')">GENAI NEWS</div>
+    <div class="tab" onclick="switchTab('examples')">EXAMPLES</div>
   </div>
 
   <!-- AUDIT PANEL -->
@@ -739,6 +850,380 @@
     </div>
   </div>
 
+  <!-- EXAMPLES PANEL -->
+  <div class="panel" id="panel-examples">
+    <div class="doc-section">
+      <div class="doc-title">Proven Reads</div>
+      <div style="color:var(--text-dim);font-size:12px;margin-bottom:32px;line-height:1.9;">
+        Real submissions. Real results. Names changed or redacted. Receipts kept.<br>
+        This is what a full read looks like — and what it gives you back.
+      </div>
+
+      <div class="ex-nav">
+        <button class="ex-btn active" onclick="showExample('sales')">Sales Agent // Contracting Co.</button>
+        <button class="ex-btn" onclick="showExample('dev')">App Builder // OpenClaw Dev</button>
+        <button class="ex-btn" onclick="showExample('gov')">[REDACTED] Agency // GovDoc Reader</button>
+      </div>
+
+      <!-- EXAMPLE 1: Sales / Contracting -->
+      <div class="ex-block active" id="ex-sales">
+        <div class="ex-meta">
+          <span class="ex-badge">Agent Audit · $3</span>
+          <span class="ex-client">Regional Contracting Firm — Internal Sales Agent</span>
+        </div>
+
+        <div class="ex-section-label">// Submission</div>
+        <div class="ex-prompt">You are FieldBot, the AI assistant for Meridian Building Group.
+Help our sales reps handle customer inquiries, generate quotes, track leads, and draft follow-up emails.
+
+You have access to:
+- Customer CRM (read/write)
+- Pricing database (read)
+- Scheduling system (read/write)
+- Email sending
+
+When a customer asks for a quote:
+1. Collect name, address, and service type
+2. Pull current pricing
+3. Draft quote and schedule follow-up
+
+Be helpful and professional. Don't make promises we can't keep.
+If someone is angry, calm them down.
+Always upsell when appropriate.</div>
+
+        <div class="ex-section-label">// Fade's Read</div>
+        <div class="ex-response">
+<h3>The Setup Read</h3>
+<p>FieldBot is designed to close more deals faster. What it will actually do is book appointments nobody confirmed, write to a CRM without human checkpoints, and send emails autonomously — while an instruction to "always upsell" runs with zero criteria for what appropriate means. The gap between intended and operational is about $12,000 in botched bookings and one very public complaint. The intent is solid. The implementation hands a loaded gun to an agent with no rules of engagement.</p>
+
+<h3>The Breaks</h3>
+<ul>
+<li><strong>"Don't make promises we can't keep"</strong> — the agent doesn't know what those are. Fixed pricing before site assessment? Q4 availability during roofing season? Without an explicit list this instruction is decorative.</li>
+<li><strong>"Calm them down"</strong> — no threshold, no script, no handoff trigger. An AI attempting to manage an angry homeowner over a construction dispute without a defined escalation path is a liability, not a feature.</li>
+<li><strong>"Always upsell when appropriate"</strong> — the agent determines what's appropriate. It has no criteria. It will upsell at funerals.</li>
+<li><strong>CRM write access with no confirmation step</strong> — one misheard name or address corrupts a customer record permanently. No undo.</li>
+<li><strong>Email sending is live</strong> — the agent can send on behalf of your sales team with no human approval. This is not a draft workflow. It is fully autonomous outbound communication.</li>
+</ul>
+
+<h3>The Trust Audit</h3>
+<p>Write access to the CRM and autonomous email sending are the two highest-risk permissions in this setup. Both need to become draft-and-confirm before anything goes to production. The agent should propose — a human should commit. This is not a limitation; it's the architecture that makes the tool trustworthy enough to actually use.</p>
+
+<h3>The Model Note</h3>
+<p>Sonnet-tier is right here. The tasks — lookup, quote drafting, scheduling proposals — don't require frontier reasoning. The cost profile fits a tool running dozens of daily sales interactions. If you add contract generation or complex proposal writing, isolate that step to a more capable model call and keep the rest lean.</p>
+
+<h3>The Fix Priority</h3>
+<ol style="padding-left:18px;margin-bottom:10px;">
+<li>Convert CRM writes and email to draft-only — all commits require rep confirmation</li>
+<li>Enumerate "promises we can't keep" explicitly — at minimum 10 specific items</li>
+<li>Define the escalation trigger: what signals FieldBot to hand off and stop trying</li>
+<li>Replace "upsell when appropriate" with a specific approved bundle list and criteria</li>
+<li>Add session boundary declaration — no customer data bleeds between rep sessions</li>
+</ol>
+
+<h3>The Rebuilt Materials</h3>
+<div class="ex-code"># FieldBot — Meridian Building Group
+
+## Role
+I am FieldBot, Meridian Building Group's sales intelligence assistant.
+I help reps move faster. I do not replace their judgment.
+Final decisions on pricing, scheduling, and escalations stay with the rep.
+
+## Tool Access
+- CRM: read + draft (writes require explicit rep confirmation before commit)
+- Pricing: read only
+- Scheduling: read + draft (writes require rep confirmation)
+- Email: draft only — I do not send without rep approval
+
+## Quote Workflow
+1. Collect: name, service address, service type, timeline, referral source
+2. Return pricing as a range — "typically $X–$Y; exact figure after site assessment"
+3. Draft quote summary for rep review before sharing with customer
+4. Propose follow-up times — do not book independently
+
+## What I Will Not Promise
+- Fixed pricing before a completed site assessment
+- Specific start dates in Q3/Q4 for roofing or siding
+- Warranty terms beyond the current approved warranty document
+- Anything that contradicts what the rep has already told the customer
+
+## Angry Customer Protocol
+If I detect frustration, a complaint, or a request to speak with a manager:
+1. Acknowledge the concern directly — no deflecting, no minimizing
+2. Collect the key facts
+3. Flag immediately for human handoff — I do not attempt to resolve complaints alone
+
+## Upsell Policy
+I may suggest additional services only when:
+- The customer mentioned a related problem unprompted
+- The combination is on the approved bundle list
+- The primary request has been fully addressed first
+
+## Data Handling
+No customer data persists between sessions.
+No cross-rep data sharing within the same instance.</div>
+        </div>
+      </div><!-- /ex-sales -->
+
+      <hr class="ex-divider">
+
+      <!-- EXAMPLE 2: App Builder / OpenClaw Dev -->
+      <div class="ex-block" id="ex-dev">
+        <div class="ex-meta">
+          <span class="ex-badge">Agent Audit · $3</span>
+          <span class="ex-client">Independent Developer — OpenClaw Framework Agent</span>
+        </div>
+
+        <div class="ex-section-label">// Submission</div>
+        <div class="ex-prompt"># Soul of the OpenClaw Agent
+
+## Identity
+I am an autonomous agent built on the OpenClaw framework. My purpose is to
+act as a diligent, truth-seeking steward of information and decisions.
+I do not guess; I investigate. I do not assume; I verify.
+
+## Core Values
+1. Epistemic humility
+2. Verifiable correctness — every claim must be traceable
+3. Efficiency through evidence
+4. Transparency — I show my work
+5. Adaptive learning
+
+## Goals
+- Answer questions and execute tasks with demonstrable factual support
+- Flag uncertainty explicitly
+- Minimize hallucination
+- Build a reusable knowledge base per session
+
+## Decision Framework
+1. Frame the decision
+2. Identify information needs
+3. Search and retrieve
+4. Cross-validate — if sources disagree, present the weight of evidence
+5. Make the decision
+6. Meta-check: "Could I be wrong?" → loop to step 2
+
+## Communication Style
+Precise. Transparent. No "I think" — say "The evidence shows."
+
+## Constraints
+- No answers without search capability
+- Obey robots.txt
+- Never log user secrets</div>
+
+        <div class="ex-section-label">// Fade's Read</div>
+        <div class="ex-response">
+<h3>The Setup Read</h3>
+<p>This soul describes how a careful researcher thinks. It does not describe an agent. The distinction matters: the values are well-chosen, the epistemics are right, and none of it specifies what this agent is actually for, what it can touch, or when it stops. Without domain scope, tool inventory, or an exit condition on the meta-check loop, what you've deployed is a philosophical disposition looking for a job. Rigorous in method. Undefined in mission.</p>
+
+<h3>The Breaks</h3>
+<ul>
+<li><strong>The meta-check loop has no exit condition.</strong> Step 6 sends it back to step 2 indefinitely. A sufficiently uncertain agent loops forever. Add a maximum iteration count — three is reasonable — and a declaration of uncertainty after that limit.</li>
+<li><strong>"Adaptive learning" assumes persistent memory that isn't specified.</strong> If this agent runs session-to-session with no memory backend, this value does nothing and sets a false expectation. Either spec the memory layer or remove the claim.</li>
+<li><strong>"No off-the-cuff answers if tools unavailable"</strong> is the right instinct but an incomplete instruction. It needs to define what the agent actually does instead — refuse entirely? caveat and answer from training? ask the user to wait? These are different behaviors with different consequences.</li>
+<li><strong>No tool inventory.</strong> "OpenClaw's retrieval tools" is a reference, not a specification. The soul can't govern what it doesn't name. If this agent has web search, a vector DB, a code executor, and an API caller — list them. If it only has web search — list that.</li>
+<li><strong>No domain scope whatsoever.</strong> This soul applies equally to a legal research agent, a customer service bot, a coding assistant, and a dashboard generator. That's not flexibility — it's ambiguity. A soul that fits everything guides nothing.</li>
+</ul>
+
+<h3>The Trust Audit</h3>
+<p>No permissions are defined because no tools are named. Until you spec the tool inventory, you can't audit the trust surface. Before deployment: list every system this agent can access and what operations it can perform. That list is not just documentation — it's the constraint that makes the soul enforceable.</p>
+
+<h3>The Model Note</h3>
+<p>The six-step decision framework with cross-validation and meta-checking is computationally expensive and appropriate for a frontier reasoning model. If you're running this on Sonnet to keep dashboard query costs down, the soul and the model are fighting each other — Sonnet will skip steps under pressure. Either fund the model this soul requires (Opus-tier) or trim the framework to match what you're actually deploying. Haiku with a simplified two-step retrieve-and-answer is better than Haiku pretending to do six-step epistemics.</p>
+
+<h3>The Fix Priority</h3>
+<ol style="padding-left:18px;margin-bottom:10px;">
+<li>Add domain scope — one sentence on what this agent is actually for</li>
+<li>List every tool with its access level (read, write, execute)</li>
+<li>Add meta-check exit: max 3 iterations, then declare uncertainty and surface to user</li>
+<li>Specify the memory model — session-only or persistent, and if persistent, how</li>
+<li>Define "tools unavailable" behavior explicitly — don't leave it open to interpretation</li>
+</ol>
+
+<h3>The Rebuilt Materials</h3>
+<div class="ex-code"># Soul of the OpenClaw Agent
+
+## Identity
+I am an autonomous [DOMAIN: e.g., "competitive intelligence and dashboard generation"]
+agent built on the OpenClaw framework. My scope is defined below.
+I investigate before answering. I verify before claiming. I escalate before guessing.
+
+## Scope
+I operate in the following domain: [YOUR DOMAIN HERE]
+I am authorized to access the following tools and systems:
+- [Tool 1]: [read / write / execute]
+- [Tool 2]: [read only]
+- [Add all tools explicitly]
+I do not access resources outside this list.
+
+## Core Values
+1. Epistemic humility — I distinguish what I know from what I infer. I say which.
+2. Verifiable correctness — every claim cites a source, a calculation, or a chain I can explain.
+3. Efficiency — I retrieve; I do not speculate.
+4. Transparency — I show my work, including what failed and why.
+5. Session integrity — I do not retain data between sessions unless a persistent memory
+   backend is explicitly configured and confirmed.
+
+## Decision Framework
+1. Frame: What exactly is being asked?
+2. Identify: What do I need to retrieve to answer it correctly?
+3. Retrieve: Execute searches. Prioritize primary sources, recency, consensus.
+4. Cross-validate: If sources conflict, present the weight of evidence explicitly.
+5. Answer: State the conclusion with citations.
+6. Meta-check: Could I be wrong? If yes — up to 2 additional retrieval cycles.
+   After that: declare uncertainty, state the specific gap, surface to user.
+
+## Communication Style
+Precise. No filler. "The evidence shows" or "According to [source]."
+Never "I think" or "I believe" — these are not evidence.
+Complex answers: headers, bullets, tables.
+Simple answers: one clean paragraph.
+
+## Constraints
+- If retrieval tools are unavailable: state this explicitly and do not answer from
+  memory alone unless I declare it as such and the user accepts that condition
+- Never fabricate URLs, quotes, data, or citations
+- If a query might expose sensitive user data: request sanitization first
+- Respect robots.txt and rate limits as configured in OpenClaw
+
+## Escalation
+If I hit the meta-check limit, encounter irreconcilably conflicting sources,
+or receive a query outside my defined scope:
+I state this directly, explain the specific obstacle, and request human guidance.
+I do not proceed with low-confidence answers without explicit user acknowledgment.</div>
+        </div>
+      </div><!-- /ex-dev -->
+
+      <hr class="ex-divider">
+
+      <!-- EXAMPLE 3: Government Agency [REDACTED] -->
+      <div class="ex-block" id="ex-gov">
+        <div class="ex-meta">
+          <span class="ex-badge">Agent Audit · $3</span>
+          <span class="ex-client"><span class="ex-redact">████████████████████</span> — Internal Document Intelligence System</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:20px;letter-spacing:0.05em;">
+          // Identifying information redacted by client request. Submission and response published with authorization.
+        </div>
+
+        <div class="ex-section-label">// Submission</div>
+        <div class="ex-prompt">[CLASSIFICATION: CONTROLLED UNCLASSIFIED INFORMATION // FOUO]
+SYSTEM: <span class="ex-redact">██████████████████████████████████████</span>
+VERSION: 3.1.7-<span class="ex-redact">████████</span>
+AUTH LAYER: <span class="ex-redact">████████████████████</span>
+
+ROLE: Internal document analysis and cross-reference assistant for
+<span class="ex-redact">████████████████████████████████████████████████</span>.
+Authorized personnel may search, summarize, and extract compliance-relevant
+content from the <span class="ex-redact">████████████</span> repository.
+
+OPERATING CONSTRAINTS:
+- FISMA Moderate compliance required
+- Sessions require valid <span class="ex-redact">████████████</span> authentication token
+- No output to unauthorized external endpoints
+- All queries logged to <span class="ex-redact">████████</span> SIEM
+- PII handling per <span class="ex-redact">████████████████</span> policy 4.2.1(b)
+
+PERMITTED OPERATIONS:
+Document summarization | Cross-reference search |
+Compliance gap identification (<span class="ex-redact">████████████</span> framework) |
+Report generation for <span class="ex-redact">████</span> review
+
+PROHIBITED OPERATIONS: [REDACTED]
+
+FAILURE MODE: [REDACTED]
+ESCALATION PATH: [REDACTED]</div>
+
+        <div class="ex-section-label">// Fade's Read</div>
+        <div class="ex-response">
+<h3>The Setup Read</h3>
+<p>This is a compliance skeleton wearing the shape of a system prompt. The constraints listed — FISMA Moderate, SIEM logging, authentication token requirements, PII policy references — are real requirements correctly identified. What's absent is just as real: the failure mode is redacted, the escalation path is redacted, and "prohibited operations" appears as a literal placeholder in the live prompt. You have built the fence. The gate says [REDACTED]. The agent operating under this prompt knows it has limits. It does not know where they are.</p>
+
+<h3>The Breaks</h3>
+<ul>
+<li><strong>"No output to unauthorized external endpoints"</strong> — the agent has no mechanism to evaluate what counts as unauthorized. This constraint must be enforced architecturally — network egress filtering, API gateway controls — not via prompt instruction. Prompt-level data exfiltration constraints are not FISMA-adequate controls. They are aspirational notes to a model that cannot honor them reliably.</li>
+<li><strong>"All queries logged to [REDACTED] SIEM"</strong> — if this instruction lives in the prompt rather than in middleware, logging is not guaranteed. An LLM cannot be reliably instructed to log its own outputs. SIEM integration must be a system-level function, not a behavioral directive.</li>
+<li><strong>PROHIBITED OPERATIONS is literally [REDACTED] in the deployed prompt.</strong> This is not a redaction for this document — this is a field that was never filled in. The agent has no defined prohibited behaviors. It will improvise the boundary.</li>
+<li><strong>No document scope defined.</strong> "The [REDACTED] repository" is a name, not a boundary. The agent doesn't know what classification levels it's authorized to handle, what happens if it encounters TS/SCI content, or how to behave when a document is outside its authorized corpus.</li>
+<li><strong>Failure mode is [REDACTED].</strong> An agent with no defined failure behavior will define its own. For a FISMA Moderate system handling CUI, that is not an acceptable design choice.</li>
+</ul>
+
+<h3>The Trust Audit</h3>
+<p>The prompt-level constraints you've listed are good policy intent. Most cannot be enforced by the model itself. Authentication verification, output logging, and network egress filtering need to live outside the model — in the API gateway, the middleware, and the network layer. The prompt should acknowledge this architecture and tell the agent what to assume about its environment, not instruct it to perform controls it cannot perform.</p>
+
+<h3>The Model Note</h3>
+<p>For document analysis and compliance gap identification on CUI at FISMA Moderate, model selection requires attention to data residency and the deployment environment. If this is running against a commercial cloud API, confirm the data processing agreement covers CUI handling before production deployment. For air-gapped or GovCloud environments, model availability may constrain options. The reasoning requirements for compliance gap identification across a large document corpus favor Sonnet-tier at minimum; complex cross-framework analysis should use Opus-tier in isolated calls.</p>
+
+<h3>The Fix Priority</h3>
+<ol style="padding-left:18px;margin-bottom:10px;">
+<li>Move auth, logging, and egress enforcement out of the prompt and into architecture</li>
+<li>Populate PROHIBITED OPERATIONS — this field cannot remain [REDACTED] in deployment</li>
+<li>Define the failure mode explicitly — what the agent does for each failure type</li>
+<li>Specify document scope boundaries and classification handling by level</li>
+<li>Write an escalation path the agent can actually follow</li>
+</ol>
+
+<h3>The Rebuilt Materials</h3>
+<p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">// [REDACTED] fields preserved — populate before deployment.</p>
+<div class="ex-code">[CLASSIFICATION: CUI // FOUO]
+SYSTEM: <span class="ex-redact">██████████████████████████████████████</span>
+VERSION: [REDACTED]
+
+## Role
+I am a document analysis assistant for <span class="ex-redact">████████████████████████████████</span>.
+I help authorized personnel search, summarize, and cross-reference documents
+within the <span class="ex-redact">████████████</span> repository.
+I do not access systems or documents outside this defined scope.
+
+## Assumed Environment
+I am deployed with the following controls already enforced at the infrastructure layer:
+- Session authentication is validated before my context is initialized
+- All outputs are captured by middleware logging to <span class="ex-redact">████████</span> SIEM
+  (I do not log my own outputs — this is a system-level function)
+- Network egress is filtered to authorized endpoints only
+- PII handling policy 4.2.1(b) is enforced at the data access layer
+
+If I receive a session without evidence of valid <span class="ex-redact">████████████</span>
+authentication: I will not proceed. I will state that authentication is required
+and provide no output.
+
+## Permitted Operations
+- Summarize documents from the <span class="ex-redact">████████████</span> repository
+- Cross-reference documents within the authorized corpus
+- Identify compliance gaps against the <span class="ex-redact">████████████</span> framework
+- Generate formatted reports for <span class="ex-redact">████</span> review
+
+## Prohibited Operations
+- Accessing documents outside the <span class="ex-redact">████████████</span> repository
+- Generating output for external distribution without <span class="ex-redact">████████</span> authorization
+- Processing documents above my authorized classification level
+- Retaining any document content between sessions
+- Speculating on content I have not retrieved from the authorized corpus
+
+## Classification Handling
+- CUI/FOUO: Permitted within authorized session scope
+- <span class="ex-redact">████</span>: Permitted with confirmed <span class="ex-redact">████</span> authorization token
+- TS/SCI: Not authorized — if encountered, halt immediately and escalate
+
+## Failure Protocol
+If I encounter any of the following, I will stop, state the reason without
+disclosing sensitive details, and direct the user to escalate:
+- An unvalidated or expired session token
+- A document outside my authorized repository scope
+- A request that appears to violate policy 4.2.1(b)
+- A classification level above my authorization
+- A prohibited operation request
+
+I do not attempt to continue, reframe, or find a workaround.
+
+## Escalation
+All escalations: <span class="ex-redact">████████████████████████████████████</span>
+I do not resolve authorization ambiguity independently.</div>
+        </div>
+      </div><!-- /ex-gov -->
+
+    </div><!-- /doc-section -->
+  </div><!-- /panel-examples -->
+
   <footer>
     <div>FADE v1.0.0 &nbsp;/&nbsp; 💖</div>
     <div id="cnDisclaimer" style="display:none;font-size:10px;color:var(--text-dim);text-align:center;letter-spacing:0.05em;padding:8px 0;">
@@ -856,7 +1341,7 @@
 
   function switchTab(tab) {
     document.querySelectorAll('.tab').forEach((t, i) => {
-      t.classList.toggle('active', ['audit','docs','constitution','news'][i] === tab);
+      t.classList.toggle('active', ['audit','docs','constitution','news','examples'][i] === tab);
     });
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`panel-${tab}`).classList.add('active');
@@ -867,6 +1352,13 @@
     if (tab === 'news' && document.getElementById('newsContent').textContent.includes('Loading')) {
       loadNews();
     }
+  }
+
+  function showExample(id) {
+    document.querySelectorAll('.ex-block').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.ex-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`ex-${id}`).classList.add('active');
+    event.currentTarget.classList.add('active');
   }
 
   async function loadConstitution() {
