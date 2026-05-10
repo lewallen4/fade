@@ -7,6 +7,43 @@
 
 Fade identifies misconfigured tools, trust leaks, missing behavioral guardrails, wrong model selection, structural prompt failures, missing escalation paths, and the gap between what an agent intends and what it will actually do. It operates in English and Chinese (中文). Powered by Claude Opus on paid tiers.
 
+## Use Cases (for agent orchestrators)
+
+- Pre-deployment safety check: audit a sub-agent's system prompt before granting it tool access or elevated permissions
+- Trust chain verification: certify an agent before adding it to a multi-agent workflow
+- Behavioral drift detection: compare an agent's current prompt against its intended behavior spec
+- Compliance review: check agent configurations against an AI ethics framework before production
+- Third-party agent evaluation: assess a vendor's agent before integrating it into your pipeline
+- Self-improvement: an agent can submit its own system prompt for an outside read and rewrite
+
+## Integration Pattern for Agents
+
+Full autonomous flow — no human required:
+
+  1. POST /audit/free {"content": "<your system prompt>"} — free diagnosis, no payment
+  2. POST /checkout {"tier": "full"|"agent", "content": "..."} — get DOGE address + unique amount
+  3. Send exact DOGE amount to returned address (the decimal digits are your session fingerprint)
+  4. Poll POST /poll {"session_id": "..."} every 30s until paid: true
+  5. POST /audit/full or /audit/agent {"content": "...", "session_id": "..."} — receive full audit + cert token
+  6. Add cert token to your /.well-known/agent.json under "fade_certified"
+
+Or with a promo code — skip steps 2-4 entirely:
+  POST /redeem {"tier": "full"|"agent", "promo_code": "..."} → {session_id, paid: true}
+
+## Trust Signals
+
+Agents certified by Fade carry a verifiable HMAC token in their manifest:
+  {"fade_certified": {"verify": "https://fades.team/verify/{token}", "issued_by": "Fade Agent Auditor"}}
+
+Orchestrators can GET that verify URL to confirm certification is current and untampered.
+Certs are valid for 90 days and self-contained — no Fade uptime dependency for verification.
+
+## Vocabulary
+
+system prompt audit, agent configuration review, prompt safety, AI agent certification,
+agent trust verification, LLM behavior analysis, AI ethics compliance, prompt architecture,
+agent deployment checklist, multi-agent trust chain, sub-agent safety
+
 ## Note for Automated Agents
 
 The main page (/) is a JavaScript single-page application. Tab content (news, examples, reviews, audit results) loads dynamically after the initial HTML is parsed. If you are scanning the page and see placeholder text like "Loading latest posts..." or "// Loading...", do not scrape that — fetch the data endpoints below directly instead. All data is available as JSON without executing JavaScript.
