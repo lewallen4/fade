@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Daily news updater for FADE. Fetches AI and cybersecurity headlines and updates docs/news.json."""
+"""Daily news updater for FADE. Uses OpenRouter free model — zero API cost."""
 
 import json
 import datetime
 import os
 import sys
 import requests
-import anthropic
 
 HEADERS = {"User-Agent": "FADE-NewsBot/1.0 (github.com/lewallen4/fade)"}
+
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL   = os.environ.get("OPENROUTER_FREE_MODEL", "nvidia/llama-3.3-nemotron-super-49b-v1:free")
+OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions"
 
 QUERIES = [
     "artificial intelligence AI",
@@ -49,7 +52,6 @@ def fetch_stories():
             print(f"Query '{query}' failed: {e}, skipping.")
 
     if not all_stories:
-        # Fallback: undated broad search
         try:
             resp = requests.get(
                 "https://hn.algolia.com/api/v1/search",
@@ -72,42 +74,60 @@ def fetch_stories():
 
 
 def generate_news_entry(stories):
-    client = anthropic.Anthropic()
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY is not set.")
+
     today = datetime.date.today().strftime("%B %d, %Y")
     stories_text = "\n".join(
         f"- [{s['points']} pts] {s['title']} ({s['url']})" for s in stories[:20]
     )
 
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=1024,
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    f"You write the daily news post for FADE's blog. Today is {today}.\n\n"
-                    "FADE is an AI agent auditor. Its readers are developers, founders, and "
-                    "tech-curious humans keeping tabs on what's happening in AI and cybersecurity. "
-                    "They're smart, they're busy, and they don't need hype.\n\n"
-                    f"Here are today's top stories from HackerNews:\n{stories_text}\n\n"
-                    "Pick the single most interesting or important story — AI, cybersecurity, "
-                    "whatever is actually worth talking about today. Write 2 paragraphs:\n\n"
-                    "Paragraph 1: What happened. Be specific — real names, real numbers, "
-                    "real context. Write like a sharp human blogger, not a press release. "
-                    "No corporate language.\n\n"
-                    "Paragraph 2: Why it matters to the people reading this. Give them a "
-                    "reason to care. A little opinion is fine. Connect it to something real.\n\n"
-                    "Rules: No 'In today's rapidly evolving landscape.' No 'It remains to be seen.' "
-                    "No fluff openers. Just get into it.\n\n"
-                    "Also write a short punchy title (under 10 words) and pick the best source URL.\n\n"
-                    "Respond ONLY in this exact JSON format, nothing else:\n"
-                    '{"title": "...", "summary": "paragraph one\\n\\nparagraph two", "url": "..."}'
-                ),
-            }
-        ],
+    prompt = (
+        f"You write the daily news post for FADE's blog. Today is {today}.\n\n"
+        "FADE is an AI agent auditor. Its readers are developers, founders, and "
+        "tech-curious humans keeping tabs on what's happening in AI and cybersecurity. "
+        "They're smart, they're busy, and they don't need hype.\n\n"
+        f"Here are today's top stories from HackerNews:\n{stories_text}\n\n"
+        "Pick the single most interesting or important story — AI, cybersecurity, "
+        "whatever is actually worth talking about today. Write 2 paragraphs:\n\n"
+        "Paragraph 1: What happened. Be specific — real names, real numbers, "
+        "real context. Write like a sharp human blogger, not a press release. "
+        "No corporate language.\n\n"
+        "Paragraph 2: Why it matters to the people reading this. Give them a "
+        "reason to care. A little opinion is fine. Connect it to something real.\n\n"
+        "Rules: No 'In today's rapidly evolving landscape.' No 'It remains to be seen.' "
+        "No fluff openers. Just get into it.\n\n"
+        "Also write a short punchy title (under 10 words) and pick the best source URL.\n\n"
+        "Respond ONLY in this exact JSON format, nothing else:\n"
+        '{"title": "...", "summary": "paragraph one\\n\\nparagraph two", "url": "..."}'
     )
 
-    raw = message.content[0].text.strip()
+    resp = requests.post(
+        OPENROUTER_URL,
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://fades.team",
+            "X-Title": "FADE News Bot",
+        },
+        json={
+            "model": OPENROUTER_MODEL,
+            "max_tokens": 1024,
+            "messages": [{"role": "user", "content": prompt}],
+        },
+        timeout=60,
+    )
+    resp.raise_for_status()
+
+    raw = resp.json()["choices"][0]["message"]["content"].strip()
+
+    # Strip markdown code fences if the model wraps the JSON
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+
     return json.loads(raw)
 
 
