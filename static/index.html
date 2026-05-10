@@ -660,6 +660,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
     font-size: 11px;
     color: var(--text-dim);
     margin-top: 20px;
@@ -708,6 +710,9 @@
     align-items: center;
     gap: 10px;
     font-size: 11px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .lang-btn {
     cursor: pointer;
@@ -715,6 +720,7 @@
     letter-spacing: 0.1em;
     transition: color 0.2s;
     user-select: none;
+    white-space: nowrap;
   }
   .lang-btn.active { color: var(--amber); }
   .lang-btn:hover { color: var(--text); }
@@ -797,7 +803,7 @@
       <button class="btn btn-primary" onclick="runPaidAudit()" id="btnPay">FREE LOOK →</button>
     </div>
 
-    <div class="loading-line" id="loadingLine">// Fade is reading your hand...</div>
+    <div class="loading-line" id="loadingLine">// Fade is reading your hand — this takes about a minute. Sit tight.</div>
 
     <div class="output-block" id="outputBlock">
       <div class="output-header">
@@ -1630,7 +1636,7 @@ I do not resolve authorization ambiguity independently.</div>
       inputLabel: "Your system prompt or agent config",
       btnFree: "FREE LOOK",
       btnPay: "DEAL THE HAND →",
-      loading: "// Fade is reading your hand...",
+      loading: "// Fade is reading your hand — this takes about a minute. Sit tight.",
       placeholder: "Paste your system prompt, agent configuration, tool descriptions, or whatever you've got...",
     },
     zh: {
@@ -1654,7 +1660,7 @@ I do not resolve authorization ambiguity independently.</div>
       inputLabel: "你的系统提示词或代理配置",
       btnFree: "免费看一眼",
       btnPay: "发牌 →",
-      loading: "// 法德正在读你的牌...",
+      loading: "// 法德正在读你的牌——大约需要一分钟，请稍候。",
       placeholder: "粘贴你的系统提示词、代理配置、工具描述，或任何你有的东西...",
     }
   };
