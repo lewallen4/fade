@@ -22,7 +22,7 @@ QUERIES = [
 
 
 def fetch_stories():
-    since = int((datetime.datetime.utcnow() - datetime.timedelta(hours=36)).timestamp())
+    since = int((datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=36)).timestamp())
     all_stories = []
     seen = set()
 
@@ -112,7 +112,7 @@ def generate_news_entry(stories):
         },
         json={
             "model": OPENROUTER_MODEL,
-            "max_tokens": 1024,
+            "max_tokens": 8192,
             "messages": [{"role": "user", "content": prompt}],
         },
         timeout=60,
@@ -120,6 +120,7 @@ def generate_news_entry(stories):
     resp.raise_for_status()
 
     raw = resp.json()["choices"][0]["message"]["content"].strip()
+    print(f"Raw model response ({len(raw)} chars):\n{raw[:500]}")
 
     # Strip markdown code fences if the model wraps the JSON
     if raw.startswith("```"):
@@ -128,7 +129,17 @@ def generate_news_entry(stories):
             raw = raw[4:]
         raw = raw.strip()
 
-    return json.loads(raw)
+    # Extract JSON object if the model added prose around it
+    start = raw.find("{")
+    end   = raw.rfind("}") + 1
+    if start != -1 and end > start:
+        raw = raw[start:end]
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(f"JSON parse failed: {e}\nFull raw output:\n{raw}")
+        raise
 
 
 def update_news_json(entry):
