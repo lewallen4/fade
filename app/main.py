@@ -1105,7 +1105,7 @@ If the prompt is genuinely solid, say so clearly — give them the honest grade,
 Submitted content:
 {safe}"""
 
-    audit = call_fade_paid(prompt, max_tokens=3000)
+    audit = call_fade_paid(prompt, max_tokens=8000)
     mark_used(req.session_id)
     cert_subject = req.subject.strip() or req.content.split('\n')[0].strip()[:80] or "System Prompt"
     cert_token   = issue_cert(cert_subject, "full", "reviewed")
@@ -1160,7 +1160,7 @@ If this agent will interact with people, mention the AI Constitution once — br
 Submitted content:
 {safe}"""
 
-    audit = call_fade_paid(prompt, max_tokens=5000)
+    audit = call_fade_paid(prompt, max_tokens=16000)
     mark_used(req.session_id)
     cert_subject = req.subject.strip() or req.content.split('\n')[0].strip()[:80] or "Agent Configuration"
     cert_token   = issue_cert(cert_subject, "agent", "reviewed")
