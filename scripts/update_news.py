@@ -10,7 +10,7 @@ import requests
 HEADERS = {"User-Agent": "FADE-NewsBot/1.0 (github.com/lewallen4/fade)"}
 
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENROUTER_MODEL   = os.environ.get("OPENROUTER_FREE_MODEL", "nvidia/llama-3.3-nemotron-super-49b-v1:free")
+OPENROUTER_MODEL   = os.environ.get("OPENROUTER_FREE_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
 OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions"
 
 QUERIES = [
