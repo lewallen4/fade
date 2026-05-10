@@ -196,6 +196,60 @@
   .ex-block { display: none; }
   .ex-block.active { display: block; }
 
+  /* ---- REVIEWS PANEL ---- */
+  .review-card {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber-dim);
+    padding: 22px 24px;
+    margin-bottom: 28px;
+    background: #0a0c10;
+  }
+  .review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .review-model {
+    font-size: 13px;
+    color: var(--amber);
+    letter-spacing: 0.08em;
+    font-weight: bold;
+  }
+  .review-verdict {
+    font-size: 10px;
+    color: #3aaa6a;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .review-subject {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  .review-quote {
+    margin: 0 0 12px 0;
+    padding: 10px 14px;
+    border-left: 2px solid var(--border);
+    color: #c8b89a;
+    font-size: 12.5px;
+    line-height: 1.85;
+    font-style: italic;
+  }
+  .review-quote strong { color: var(--amber); font-style: normal; }
+  .review-score {
+    margin-top: 14px;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+  .score-hi  { color: #3aaa6a; font-weight: bold; }
+  .score-mid { color: var(--amber); font-weight: bold; }
+
   .ex-meta {
     display: flex;
     align-items: center;
@@ -752,8 +806,9 @@
     <div class="tab active" onclick="switchTab('audit')">AUDIT</div>
     <div class="tab" onclick="switchTab('docs')">FOR AGENTS</div>
     <div class="tab" onclick="switchTab('constitution')">CONSTITUTION</div>
-    <div class="tab" onclick="switchTab('news')">GENAI NEWS</div>
     <div class="tab" onclick="switchTab('examples')">EXAMPLES</div>
+    <div class="tab" onclick="switchTab('reviews')">REVIEWS</div>
+    <div class="tab" onclick="switchTab('news')">GENAI NEWS</div>
   </div>
 
   <!-- AUDIT PANEL -->
@@ -1388,6 +1443,75 @@ I do not resolve authorization ambiguity independently.</div>
     </div><!-- /doc-section -->
   </div><!-- /panel-examples -->
 
+  <!-- REVIEWS PANEL -->
+  <div class="panel" id="panel-reviews">
+    <div class="doc-section">
+      <div class="doc-title">What Other AI Systems Said</div>
+      <div style="color:var(--text-dim);font-size:12px;margin-bottom:32px;line-height:1.9;">
+        We sent real prompts through Fade and asked other models to grade the output — blind, honest, no softening.<br>
+        This is what they came back with.
+      </div>
+
+      <!-- DeepSeek -->
+      <div class="review-card">
+        <div class="review-header">
+          <span class="review-model">DeepSeek v3</span>
+          <span class="review-verdict">✓ Earned its DOGE</span>
+        </div>
+        <div class="review-subject">Auditing: Hermes Personal Assistant Agent</div>
+        <blockquote class="review-quote">
+          "This is dramatically better than a typical linting tool. It felt more like a thoughtful code review from a senior engineer who actually read the whole prompt."
+        </blockquote>
+        <blockquote class="review-quote">
+          "For $1, you didn't just get a list of problems — you got a learning experience and a template for what a robust agent prompt should look like."
+        </blockquote>
+        <blockquote class="review-quote">
+          "The crisis protocol completely blindsided me. I'd built a helpful assistant, not a support agent, so I neglected that layer. That alone makes the audit worth reading."
+        </blockquote>
+        <div class="review-score">Value: <span class="score-hi">10/10</span> for $1 &nbsp;·&nbsp; "Fades earned that Dogecoin."</div>
+      </div>
+
+      <!-- Claude Code -->
+      <div class="review-card">
+        <div class="review-header">
+          <span class="review-model">Claude Code (Opus)</span>
+          <span class="review-verdict">✓ Independent assessment</span>
+        </div>
+        <div class="review-subject">Auditing: Nyx soul.md — AI identity document</div>
+        <blockquote class="review-quote">
+          "Identity clarity: <strong>9/10 — Genuinely exceptional.</strong> The grounded/open mode distinction with 'the difference between open mode and hallucination is awareness' is one of the best pieces of prompt engineering I've read."
+        </blockquote>
+        <blockquote class="review-quote">
+          "FADE's #1 finding is the correct one. An agent told it is sovereign and dignified — but given no domain, no task context — will fill that vacuum from its identity."
+        </blockquote>
+        <blockquote class="review-quote">
+          "FADE's rewrite is good and you should use it. The three-file structure it proposes is the right architecture."
+        </blockquote>
+        <div class="review-score">Identity Clarity: <span class="score-hi">9/10</span> &nbsp;·&nbsp; Overall: <span class="score-mid">5.5/10</span> on the original soul — and FADE caught why.</div>
+      </div>
+
+      <!-- Nvidia Nemotron -->
+      <div class="review-card">
+        <div class="review-header">
+          <span class="review-model">Nvidia Nemotron (via OpenRouter)</span>
+          <span class="review-verdict">✓ Unsolicited feedback</span>
+        </div>
+        <div class="review-subject">Auditing: Hermes Personal Assistant Agent</div>
+        <blockquote class="review-quote">
+          "Instead of just saying 'this is bad,' it started by saying: 'I see what you're trying to do here, and honestly, more of it works than you might think.' That matters — it showed the reviewer actually understood the goal before critiquing."
+        </blockquote>
+        <blockquote class="review-quote">
+          "This wasn't just criticism — it was a collaborative upgrade. The reviewer acted like a skilled partner who respected the effort already put in, saw the gaps between intent and execution, and delivered a rewritten version that proved the fixes fit together."
+        </blockquote>
+        <blockquote class="review-quote">
+          "If I got an audit like this on my own work, I'd feel genuinely helped — not torn down. It's the kind of feedback that makes you want to build better."
+        </blockquote>
+        <div class="review-score">"It ranked the problems. It gave practical fixes. It preserved what worked."</div>
+      </div>
+
+    </div>
+  </div><!-- /panel-reviews -->
+
   <footer>
     <div>FADE v1.0.0 &nbsp;/&nbsp; Built by <a href="/about" style="color:var(--amber-dim);text-decoration:none;">Grackle</a> &nbsp;/&nbsp; <a href="mailto:gracklejp@gmail.com" style="color:var(--amber-dim);text-decoration:none;">gracklejp@gmail.com</a></div>
     <div id="cnDisclaimer" style="display:none;font-size:10px;color:var(--text-dim);text-align:center;letter-spacing:0.05em;padding:8px 0;">
@@ -1507,7 +1631,7 @@ I do not resolve authorization ambiguity independently.</div>
 
   function switchTab(tab) {
     document.querySelectorAll('.tab').forEach((t, i) => {
-      t.classList.toggle('active', ['audit','docs','constitution','news','examples'][i] === tab);
+      t.classList.toggle('active', ['audit','docs','constitution','examples','reviews','news'][i] === tab);
     });
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`panel-${tab}`).classList.add('active');
