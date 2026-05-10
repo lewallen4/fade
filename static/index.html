@@ -1514,10 +1514,6 @@ I do not resolve authorization ambiguity independently.</div>
 
   <footer>
     <div>FADE v1.0.0 &nbsp;/&nbsp; Built by <a href="/about" style="color:var(--amber-dim);text-decoration:none;">Grackle</a> &nbsp;/&nbsp; <a href="mailto:gracklejp@gmail.com" style="color:var(--amber-dim);text-decoration:none;">gracklejp@gmail.com</a></div>
-    <div id="cnDisclaimer" style="display:none;font-size:10px;color:var(--text-dim);text-align:center;letter-spacing:0.05em;padding:8px 0;">
-      本中文版仅供参考。如有歧义，以英文版本为准。
-      <a href="javascript:void(0)" onclick="setLang('en')" style="color:var(--amber-dim);text-decoration:none;margin-left:6px;">查看英文版 →</a>
-    </div>
     <div class="lang-toggle">
       <span id="langUS" class="lang-btn active" onclick="setLang('en')">🇺🇸 EN</span>
       <span style="color:var(--border)">|</span>
@@ -1529,6 +1525,10 @@ I do not resolve authorization ambiguity independently.</div>
       <a href="/privacy" target="_blank">PRIVACY</a>
       <a href="/.well-known/agent.json" target="_blank">MANIFEST</a>
       <a href="/health" target="_blank">STATUS</a>
+    </div>
+    <div id="cnDisclaimer" style="display:none;width:100%;font-size:10px;color:var(--text-dim);text-align:center;letter-spacing:0.05em;padding-top:8px;">
+      本中文版仅供参考。如有歧义，以英文版本为准。
+      <a href="javascript:void(0)" onclick="setLang('en')" style="color:var(--amber-dim);text-decoration:none;margin-left:6px;">查看英文版 →</a>
     </div>
   </footer>
 </div>
@@ -1744,6 +1744,8 @@ I do not resolve authorization ambiguity independently.</div>
       tabAudit: "AUDIT",
       tabAgents: "FOR AGENTS",
       tabConstitution: "CONSTITUTION",
+      tabExamples: "EXAMPLES",
+      tabReviews: "REVIEWS",
       tabNews: "GENAI NEWS",
       intro: `You built something. Handed it a wallet. Maybe a few tools. Told it to be helpful.<br>
         <em>Now you're wondering why it's drifting.</em><br><br>
@@ -1768,6 +1770,8 @@ I do not resolve authorization ambiguity independently.</div>
       tabAudit: "审计",
       tabAgents: "面向代理",
       tabConstitution: "AI 伦理宪章",
+      tabExamples: "示例",
+      tabReviews: "评价",
       tabNews: "GenAI 新闻",
       intro: `你造了个东西。给了它钱包，给了它工具，告诉它要有用。<br>
         <em>现在你在想，为什么它偏了。</em><br><br>
@@ -1799,7 +1803,9 @@ I do not resolve authorization ambiguity independently.</div>
     tabs[0].textContent = t.tabAudit;
     tabs[1].textContent = t.tabAgents;
     tabs[2].textContent = t.tabConstitution;
-    tabs[3].textContent = t.tabNews;
+    tabs[3].textContent = t.tabExamples;
+    tabs[4].textContent = t.tabReviews;
+    tabs[5].textContent = t.tabNews;
     document.querySelector('.fade-speech').innerHTML = t.intro;
     const cards = document.querySelectorAll('.price-card');
     cards[0].querySelector('.price-tier').textContent = t.tierFreeLabel;
