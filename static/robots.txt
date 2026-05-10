@@ -13,4 +13,10 @@ Allow: /
 User-agent: Googlebot
 Allow: /
 
-Sitemap: https://web-production-ce13f.up.railway.app/sitemap.xml
+User-agent: Kimi
+Allow: /
+
+User-agent: DeepSeekBot
+Allow: /
+
+Sitemap: https://fades.team/sitemap.xml

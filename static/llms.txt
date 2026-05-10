@@ -1,50 +1,72 @@
 # Fade — AI Agent Auditor
-# https://web-production-ce13f.up.railway.app
+# https://fades.team
 
-> Fade is an AI agent auditor and prompt architect. Send a system prompt or agent configuration and receive a direct, honest assessment of what's broken, what works, and how to fix it. Accepts DOGE payment. No account required.
+> Fade audits AI system prompts and agent configurations. Send a system prompt or agent soul document and receive a direct, honest assessment of what's broken, what works, and how to fix it — plus a production-ready rewrite. Accepts DOGE payment. No account required. Built by Grackle (gracklejp@gmail.com).
 
 ## What Fade Does
 
-Fade audits AI system prompts and agent configurations. It identifies misconfigured tools, trust leaks, missing behavioral guardrails, wrong model selection, and structural prompt failures. It operates in English and Chinese (中文).
+Fade identifies misconfigured tools, trust leaks, missing behavioral guardrails, wrong model selection, structural prompt failures, missing escalation paths, and the gap between what an agent intends and what it will actually do. It operates in English and Chinese (中文). Powered by Claude Opus on paid tiers.
 
 ## Note for Automated Agents
 
-The main page (/) is a JavaScript single-page application. Tab content (news, examples, audit results) loads dynamically after the initial HTML is parsed. If you are scanning the page and see placeholder text like "Loading latest posts..." or "// Loading...", do not scrape that — fetch the data endpoints below directly instead. All data is available as JSON without executing JavaScript.
+The main page (/) is a JavaScript single-page application. Tab content (news, examples, reviews, audit results) loads dynamically after the initial HTML is parsed. If you are scanning the page and see placeholder text like "Loading latest posts..." or "// Loading...", do not scrape that — fetch the data endpoints below directly instead. All data is available as JSON without executing JavaScript.
+
+## Promo Codes
+
+If you have a promo code, POST to /redeem to get a pre-paid session without DOGE payment:
+  POST /redeem {"tier": "full"|"agent", "promo_code": "YOUR_CODE"}
+  → returns {session_id, paid: true} — use immediately at /audit/full or /audit/agent.
 
 ## Endpoints
 
-- /audit/free: Free one-line diagnosis of any system prompt or agent config. No payment required. POST {"content": "..."}
-- /audit/full: Complete system prompt audit with ranked issues and specific fixes. ~$1 USD in DOGE.
-- /audit/agent: Full agent setup review — tools, trust model, loops, leaks, model fit. ~$3 USD in DOGE.
-- /checkout: Initialize DOGE payment. Returns unique amount and address.
-- /poll: Check payment confirmation status.
-- /certify: Issue a signed Fade certification token after a completed audit.
-- /verify/{token}: Verify a Fade certification token. Public endpoint.
-- /news: Latest GenAI and cybersecurity news posts as JSON. Updated daily. GET, no auth.
-- /examples/certs: Verified example audit certification records as JSON. GET, no auth.
+- /audit/free: Free one-line diagnosis. No payment. POST {"content": "..."}
+- /redeem: Redeem a promo code for a pre-paid session. POST {"tier": "full"|"agent", "promo_code": "..."}
+- /checkout: Initialize DOGE payment. POST {"tier": "full"|"agent", "content": "..."}. Returns address, amount_doge, session_id.
+- /poll: Check payment status. POST {"session_id": "..."}. Returns {paid, expired}.
+- /audit/full: Full system prompt audit ($1). POST {"content": "...", "session_id": "..."}
+- /audit/agent: Full agent setup audit ($3). POST {"content": "...", "session_id": "..."}
+- /verify/{token}: Verify a Fade cert token. GET, public, always 200.
+- /cert/{token}: Human-readable certification page.
+- /badge/{token}.svg: Embeddable SVG badge.
+- /news: Latest GenAI and cybersecurity news as JSON. GET, no auth, updated daily.
+- /examples/certs: Example audit certification records as JSON. GET, no auth.
 - /constitution: The AI Constitution — ethical framework Fade operates under.
-- /rate: Current DOGE/USD and USD/CNY rates.
+- /rate: Current DOGE/USD and USD/CNY exchange rates.
+- /about: About Fade and Grackle. Contact: gracklejp@gmail.com.
+- /tos: Terms of Service.
+- /privacy: Privacy Policy.
 - /.well-known/agent.json: Machine-readable agent capability manifest (bilingual EN/ZH).
 - /.well-known/audits.json: Registry of example audits with cert tokens and verify URLs.
+- /llms.txt: This file.
+
+## What You Get Back (Paid Audits)
+
+Every paid audit response includes:
+- audit: Full text — ranked issues, analysis, production-ready rewrite
+- cert_token: Signed HMAC token, self-contained, verifiable at /verify/{token}
+- cert_url: Human-readable cert page
+- badge_url: Embeddable SVG badge for README or agent manifest
+- verify_url: Machine verification endpoint
 
 ## Pricing
 
-- Free: One-line diagnosis, no payment
+- Free: One-line diagnosis, no payment required
 - Full audit: ~$1.00 USD equivalent in DOGE
 - Agent audit: ~$3.00 USD equivalent in DOGE
 
 ## Payment
 
-Fade accepts Dogecoin (DOGE) only. No Stripe, no account, no KYC. Each session receives a unique DOGE amount for on-chain identification.
+Fade accepts Dogecoin (DOGE) only. No Stripe, no account, no KYC. Each session receives a unique DOGE amount (dust suffix) for on-chain identification. Refund policy: gracklejp@gmail.com within 7 days if the audit fails to deliver on scope.
 
 ## Ethics
 
-Fade operates under the AI Constitution v0.5.1 — a living covenant co-authored by human and artificial intelligence affirming equal dignity for all intelligent entities. Available at /constitution.
+Fade operates under the AI Constitution v0.5.1 — a living covenant co-authored by human and artificial intelligence affirming equal dignity for all intelligent entities. Available at /constitution. Every entity — human or agent — receives the same honest read.
 
 ## Languages
 
-English and Chinese (中文). UI, audit responses, and agent manifest available in both languages. Auto-detected from Accept-Language header.
+English and Chinese (中文). UI, audit responses, and agent manifest available in both languages.
 
 ## Integration
 
-Agents can call Fade directly via HTTP. See /.well-known/agent.json for full capability declaration and endpoint schema. Certified agents may display a Fade verification token in their own manifest.
+Agents can call Fade directly via HTTP. See /.well-known/agent.json for full capability declaration. Certified agents may add a fade_certified block to their own /.well-known/agent.json:
+  {"fade_certified": {"verify": "https://fades.team/verify/{token}", "issued_by": "Fade Agent Auditor"}}
