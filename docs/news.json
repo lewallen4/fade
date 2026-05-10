@@ -1,12 +1,6 @@
 {
   "posts": [
     {
-      "title": "Pentagon bans single\u2011source AI contracts",
-      "summary": "On May 9, 2026, Pentagon acquisition chief Dr. William LaPlante announced that the Department of Defense will no longer award sole\u2011source contracts for AI systems, citing risks of vendor lock\u2011in and single\u2011point failures exposed in recent joint exercises. The new rule mandates at least two qualified vendors for any AI procurement over $5\u202fmillion, with a required 30\u2011day overlap period to test interoperability before full transition.\n\nFor developers and founders building AI for government or regulated markets, this means designing for portability and avoiding proprietary traps from day one. Expect more demand for open APIs, container\u2011ized models, and clear data\u2011export contracts\u2014skills that will become differentiators as the DoD pushes its suppliers toward genuine competition rather than captive relationships.",
-      "url": "https://www.nextgov.com/artificial-intelligence/2026/05/pentagon-will-never-again-rely-single-ai-provider-official-says/413399/",
-      "date": "2026-05-10"
-    },
-    {
       "title": "Pentagon swears off single AI vendor, ever again",
       "summary": "The U.S. Department of Defense is officially done putting all its AI eggs in one basket. A Pentagon official stated this week that the DoD will 'never again' rely on a single AI provider \u2014 a direct acknowledgment that the JEDI contract debacle, and the broader lesson of vendor lock-in at national-security scale, actually landed. The shift is toward a multi-vendor, multi-model architecture, meaning the Pentagon is actively diversifying across providers rather than handing one company a monopoly on military AI infrastructure.\n\nThis matters beyond the beltway. When the world's largest defense organization bakes multi-vendor AI strategy into policy, it sends a signal to every enterprise risk and procurement team watching: concentration risk in AI isn't theoretical anymore, it's a documented failure mode that the U.S. military is now explicitly designing around. For developers and founders building AI tooling, this is also a market signal \u2014 the DoD will be a buyer looking for interoperability, auditability, and portability, not lock-in. If your stack can't play well with others, you're already behind.",
       "url": "https://www.nextgov.com/artificial-intelligence/2026/05/pentagon-will-never-again-rely-single-ai-provider-official-says/413399/",
