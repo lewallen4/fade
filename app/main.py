@@ -343,9 +343,9 @@ async def call_fade_free(user_message: str, max_tokens: int = 2000) -> str:
                 json={
                     "model": OPENROUTER_FREE_MODEL,
                     "max_tokens": max_tokens,
-                    "reasoning": {"enabled": True, "exclude": True},
+                    "reasoning": {"exclude": True},
                     "messages": [
-                        {"role": "system", "content": FADE_SYSTEM + "\n\nIMPORTANT: Put all internal reasoning in the reasoning field, not content. The content field should ONLY contain your final response to the user, in character, with no preamble, planning, or meta-commentary."},
+                        {"role": "system", "content": FADE_SYSTEM + "\n\nCRITICAL: Output ONLY your final response. Do not show your thinking, reasoning, planning, or analysis. No preamble. No 'Let me think' or 'Okay, I need to'. Start directly with your read."},
                         {"role": "user",   "content": user_message},
                     ],
                 }
@@ -356,13 +356,41 @@ async def call_fade_free(user_message: str, max_tokens: int = 2000) -> str:
             data = resp.json()
             msg = data["choices"][0]["message"]
 
-            # Reasoning parameter removed — model answers directly in content.
-            # Belt and suspenders: strip <think> tags in case any bleed through.
             text = msg.get("content") or ""
-            text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+
+            # Strip <think>...</think> blocks (some models use tags)
+            text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+
+            # Strip plain-text thinking preamble — some models dump reasoning
+            # as prose before the actual response. Detect by looking for a
+            # separator or a shift to Fade's voice after the thinking block.
+            # Common thinking openers we want to cut before:
+            _thinking_start = re.compile(
+                r"^(okay[,.]?|alright[,.]?|let me|i need to|i'll|i will|"
+                r"first[,.]?|looking at|scanning|reading|analyzing|"
+                r"the user|so[,]? the)",
+                re.IGNORECASE,
+            )
+            lines = text.split("\n")
+            # Find the last line that looks like a thinking opener — everything
+            # before (and including) that block is reasoning, not response.
+            # We walk forward and cut at the first non-thinking paragraph break.
+            if lines and _thinking_start.match(lines[0].strip()):
+                # Find a blank line followed by content that doesn't read as thinking
+                cut = 0
+                for i, line in enumerate(lines):
+                    if line.strip() == "" and i + 1 < len(lines):
+                        next_line = lines[i + 1].strip()
+                        if next_line and not _thinking_start.match(next_line):
+                            cut = i + 1
+                            break
+                if cut:
+                    text = "\n".join(lines[cut:])
+
+            text = text.strip()
 
             if not text:
-                logger.error(f"OpenRouter returned empty content. Keys: {list(msg.keys())}")
+                logger.error(f"OpenRouter returned empty content after stripping. Keys: {list(msg.keys())}")
                 raise HTTPException(status_code=502, detail="Couldn't reach the table. Try again shortly.")
 
             return text
