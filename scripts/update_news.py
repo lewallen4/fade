@@ -112,7 +112,7 @@ def generate_news_entry(stories):
         },
         json={
             "model": OPENROUTER_MODEL,
-            "max_tokens": 2048,
+            "max_tokens": 8192,
             "messages": [{"role": "user", "content": prompt}],
         },
         timeout=60,
