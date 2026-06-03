@@ -1,8 +1,8 @@
 name: Daily AI News Update
 
 on:
-  #schedule:
-    #- cron: '0 15 * * *'  # 8:00 AM PDT (UTC-7); becomes 7 AM during PST (UTC-8)
+  schedule:
+    - cron: '0 15 * * *'  # 8:00 AM PDT (UTC-7); becomes 7 AM during PST (UTC-8)
   workflow_dispatch:
 
 jobs:
