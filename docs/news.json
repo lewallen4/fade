@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Claude AI Writes Over 80% of Its Code",
+      "summary": "Anthropic revealed that its Claude AI model is now responsible for generating more than 80% of the code merged into its main repository, according to a Tom's Hardware report dated June 5, 2026. The figure comes from internal metrics tracking pull requests and commits across Claude\u2019s codebase, where the model autonomously writes, reviews, and integrates changes without human intervention for the majority of contributions.\n\nFor developers and founders, this signals a shift from AI as a coding assistant to AI as a primary author, accelerating development cycles but also raising questions about code quality, security audits, and intellectual property. If a model can self\u2011propagate its own logic at this pace, the need for robust verification tooling and clear governance becomes urgent\u2014otherwise we risk shipping opaque, self\u2011evolving software we can\u2019t fully trust.",
+      "url": "https://www.tomshardware.com/tech-industry/artificial-intelligence/anthropic-says-claude-now-writes-more-than-80-percent-of-its-merged-code",
+      "date": "2026-06-06"
+    },
+    {
       "title": "AI Blamed for 38k Tech Layoffs in May",
       "summary": "In May 2026 the US tech sector shed 38,242 jobs, the largest monthly drop since the pandemic\u2011era layoffs, with AI cited as the top reason by employers cutting staff. According to Tom\u2019s Hardware, companies from hyperscalers to early\u2011stage startups pointed to automation of coding, testing and support roles as they trimmed headcount to offset rising AI token expenses and shifting product roadmaps.\n\nFor developers and founders this isn\u2019t just a statistic; it\u2019s a signal that AI\u2011driven efficiency is already reshaping hiring plans and budget priorities. If your team is still betting on pure headcount growth to scale, you may need to rethink how you allocate engineer time \u2014 investing in AI literacy, tooling, and roles that complement rather than compete with the models that are now taking over routine tasks.",
       "url": "https://www.tomshardware.com/tech-industry/artificial-intelligence/tech-sector-cut-us-jobs-by-38242-in-may",
