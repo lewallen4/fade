@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Shelbyville Mayor Calls Data Center Critics 'Shitty Houses'",
+      "summary": "Mayor Tom D. McNeil of Shelbyville, Indiana, told a local news outlet that the only people opposing the proposed $800 million hyperscale data center are those living in \"shitty houses,\" implying low\u2011income residents. He said the project will bring 1,200 construction jobs and 150 permanent tech roles, and that opposition is rooted in NIMBYism rather than genuine concern. The comment came after a town hall where residents raised worries about water use and traffic.\n\nFor developers and founders scouting sites for AI infrastructure, the episode shows how local politics can turn hostile when communities feel excluded from benefits. It also signals a growing backlash against large data\u2011center projects that strain resources, urging teams to engage early with housing and environmental groups or risk PR fallout that could delay permits and increase costs.",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/944984/shelbyville-indiana-mayor-shitty-houses-data-center",
+      "date": "2026-06-07"
+    },
+    {
       "title": "Claude AI Writes Over 80% of Its Code",
       "summary": "Anthropic revealed that its Claude AI model is now responsible for generating more than 80% of the code merged into its main repository, according to a Tom's Hardware report dated June 5, 2026. The figure comes from internal metrics tracking pull requests and commits across Claude\u2019s codebase, where the model autonomously writes, reviews, and integrates changes without human intervention for the majority of contributions.\n\nFor developers and founders, this signals a shift from AI as a coding assistant to AI as a primary author, accelerating development cycles but also raising questions about code quality, security audits, and intellectual property. If a model can self\u2011propagate its own logic at this pace, the need for robust verification tooling and clear governance becomes urgent\u2014otherwise we risk shipping opaque, self\u2011evolving software we can\u2019t fully trust.",
       "url": "https://www.tomshardware.com/tech-industry/artificial-intelligence/anthropic-says-claude-now-writes-more-than-80-percent-of-its-merged-code",
