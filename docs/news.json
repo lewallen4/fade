@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Nightwatch: Open\u2011Source Read\u2011Only AI SRE Launched",
+      "summary": "Nightwatch, an open\u2011source, read\u2011only AI SRE tool, was released today on GitHub by ninoxAI. The agent watches live AI workloads, pulls metrics and logs via read\u2011only APIs, and surfaces anomalies without ever invoking write actions on the target system. It ships with a MIT license, a Prometheus exporter, and a set of predefined prompts for checking latency, token usage, and safety\u2011policy violations.\n\nFor developers who are already wrestling with hallucinations, runaway token costs, and compliance checks, having a lightweight, observable layer that can\u2019t accidentally modify the system is a practical win. Because Nightwatch is open source, teams can audit its checks, extend them to their own models, and plug it into existing monitoring pipelines without vendor lock\u2011in\u2014something that matters when you\u2019re trying to trust AI in production.",
+      "url": "https://github.com/ninoxAI/nightwatch",
+      "date": "2026-06-08"
+    },
+    {
       "title": "Shelbyville Mayor Calls Data Center Critics 'Shitty Houses'",
       "summary": "Mayor Tom D. McNeil of Shelbyville, Indiana, told a local news outlet that the only people opposing the proposed $800 million hyperscale data center are those living in \"shitty houses,\" implying low\u2011income residents. He said the project will bring 1,200 construction jobs and 150 permanent tech roles, and that opposition is rooted in NIMBYism rather than genuine concern. The comment came after a town hall where residents raised worries about water use and traffic.\n\nFor developers and founders scouting sites for AI infrastructure, the episode shows how local politics can turn hostile when communities feel excluded from benefits. It also signals a growing backlash against large data\u2011center projects that strain resources, urging teams to engage early with housing and environmental groups or risk PR fallout that could delay permits and increase costs.",
       "url": "https://www.theverge.com/ai-artificial-intelligence/944984/shelbyville-indiana-mayor-shitty-houses-data-center",
