@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Users Demand AI\u2011Content Filters Across Major Platforms",
+      "summary": "The Verge ran a piece titled \u201cLet us filter AI slop, you cowards\u201d that details a growing chorus of users demanding that Google, YouTube, Meta, Instagram and TikTok give people the ability to hide or label AI\u2011generated posts, videos and images. The article points to recent spikes in AI\u2011made spam and deepfake clips flooding feeds, and notes that several advocacy groups have started petitions asking for a simple toggle to filter out synthetic content.\n\nFor developers and founders building AI\u2011powered products, this is a warning sign: users are craving transparency and control, not just more flashy generative features. Ignoring the demand for easy AI\u2011content filters could erode trust, invite regulatory push\u2011on, and push users toward platforms that offer clearer provenance tools \u2014 making it a practical consideration for anyone shipping AI today.",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/942909/let-us-filter-ai-slop-google-youtube-meta-instagram-tiktok",
+      "date": "2026-06-09"
+    },
+    {
       "title": "Nightwatch: Open\u2011Source Read\u2011Only AI SRE Launched",
       "summary": "Nightwatch, an open\u2011source, read\u2011only AI SRE tool, was released today on GitHub by ninoxAI. The agent watches live AI workloads, pulls metrics and logs via read\u2011only APIs, and surfaces anomalies without ever invoking write actions on the target system. It ships with a MIT license, a Prometheus exporter, and a set of predefined prompts for checking latency, token usage, and safety\u2011policy violations.\n\nFor developers who are already wrestling with hallucinations, runaway token costs, and compliance checks, having a lightweight, observable layer that can\u2019t accidentally modify the system is a practical win. Because Nightwatch is open source, teams can audit its checks, extend them to their own models, and plug it into existing monitoring pipelines without vendor lock\u2011in\u2014something that matters when you\u2019re trying to trust AI in production.",
       "url": "https://github.com/ninoxAI/nightwatch",
