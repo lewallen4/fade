@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Nucleus: A Secure, Nix\u2011Native Container Runtime",
+      "summary": "Sig-id released Nucleus on GitHub, a container runtime built on Nix that aims to harden workloads by using reproducible, declarative builds and integrating Linux security features like SELinux profiles, seccomp filters, and read\u2011only root filesystems. The project positions itself as a drop\u2011in replacement for runc or gVisor, letting users pull images from Nixpkgs instead of Docker Hub and guaranteeing that the exact same binary runs everywhere.\n\nFor developers and founders wrestling with supply\u2011chain attacks and compliance audits, Nucleus offers a concrete way to shrink the trusted base: because every layer is derived from Nix expressions, you can audit the exact source of each binary and rebuild it locally with a single command. That reduces reliance on opaque public images and makes it easier to meet standards like SOC\u202f2 or ISO\u202f27001 without rewriting your CI pipeline.",
+      "url": "https://github.com/sig-id/nucleus",
+      "date": "2026-06-10"
+    },
+    {
       "title": "Users Demand AI\u2011Content Filters Across Major Platforms",
       "summary": "The Verge ran a piece titled \u201cLet us filter AI slop, you cowards\u201d that details a growing chorus of users demanding that Google, YouTube, Meta, Instagram and TikTok give people the ability to hide or label AI\u2011generated posts, videos and images. The article points to recent spikes in AI\u2011made spam and deepfake clips flooding feeds, and notes that several advocacy groups have started petitions asking for a simple toggle to filter out synthetic content.\n\nFor developers and founders building AI\u2011powered products, this is a warning sign: users are craving transparency and control, not just more flashy generative features. Ignoring the demand for easy AI\u2011content filters could erode trust, invite regulatory push\u2011on, and push users toward platforms that offer clearer provenance tools \u2014 making it a practical consideration for anyone shipping AI today.",
       "url": "https://www.theverge.com/ai-artificial-intelligence/942909/let-us-filter-ai-slop-google-youtube-meta-instagram-tiktok",
