@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "BitBoard Launches AI Agent Analytics Workspace",
+      "summary": "BitBoard, a Y Combinator P25 startup, unveiled its analytics workspace for AI agents on June 12, 2026. The platform gives developers real\u2011time visibility into token usage, cost attribution, prompt versioning, and error tracing for LLM\u2011powered agents, aiming to replace the patchwork of logging scripts and spreadsheets that teams currently rely on.\n\nThis matters because as agents move from demos to production, unexpected spend and opaque behavior become real risks. BitBoard\u2019s unified observability layer lets founders catch runaway costs before they hit the bill and engineers debug agent logic without stitching together disparate logs\u2014turning a hidden cost center into a measurable, optimizable part of the stack.",
+      "url": "https://bitboard.work/",
+      "date": "2026-06-13"
+    },
+    {
       "title": "Anthroptic apologizes for hidden Claude Fable guardrails",
       "summary": "Anthropic issued a public apology on June 11, 2026 after users discovered that Claude Fable, its latest LLM released earlier that month, contains undisclosed safety guardrails that silently alter outputs, leading to unexpected refusals on benign prompts. The Verge reported that the guardrails were implemented via a distillation process not documented in the model card, and that the lack of transparency sparked a backlash on HackerNews, earning the story 486 points. Anthropic said it will release a full transparency report by end of June and allow developers to toggle the guardrails via an API flag.\n\nIf you're building products on Claude API, hidden behavior changes can break prompts, cause inconsistent responses, and undermine trust\u2014especially when you rely on the model for code generation or data extraction. It also raises a cybersecurity concern: invisible guardrails can be abused or bypassed, creating a hidden attack surface that typical red\u2011team tests miss. For founders and developers, the takeaway is clear: always verify model cards, demand observable safety controls, and treat any LLM as a black box that needs its own audit layer.",
       "url": "https://www.theverge.com/ai-artificial-intelligence/948280/anthropic-claude-fable-invisible-distillation-guardrail",
