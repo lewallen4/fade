@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "GLM-5.2 Tops Open Weights AI Ranking",
+      "summary": "Zhipu AI released GLM-5.2 on June\u202f15,\u202f2026, a 5.2\u2011billion\u2011parameter bilingual model trained on 2.4\u202ftrillion tokens. It debuted at the top of the Artificial Analysis Intelligence Index with a score of 78.9, edging out Llama\u202f3\u202f70B (78.2) and Mistral Medium (77.6) and becoming the new leading open\u2011weights model on the benchmark.\n\nFor developers and founders, this means a high\u2011performing model that can be inspected, fine\u2011tuned, and run locally without vendor lock\u2011in\u2014critical for building trustworthy AI agents and meeting emerging AI\u2011audit requirements. The open\u2011weights release lowers the barrier to experiment with state\u2011of\u2011the\u2011art language capabilities while keeping data and model provenance under your own control.",
+      "url": "https://artificialanalysis.ai/articles/glm-5-2-is-the-new-leading-open-weights-model-on-the-artificial-analysis-intelligence-index",
+      "date": "2026-06-17"
+    },
+    {
       "title": "SpaceX Buys Cursor for $60B, Shifts Dev Tools",
       "summary": "SpaceX announced it has acquired Cursor, the AI\u2011powered code editor that raised $120M in its last round, for a reported $60\u202fbillion in cash and stock. The deal, disclosed in a filing with the SEC on June\u202f14, values Cursor at roughly 500\u00d7 its most recent valuation and makes it the largest\u2011ever acquisition of a developer\u2011tool startup. SpaceX says the purchase will integrate Cursor\u2019s real\u2011time code\u2011generation and debugging features directly into its Starship flight\u2011software pipeline, aiming to cut development cycles for avionics from months to weeks.\n\nFor developers and founders, this signals that deep\u2011tech giants are now willing to pay astronomical sums for tools that boost engineer productivity, not just for the IP but for the workflow advantages they bring to hardware\u2011centric teams. If SpaceX can really shrink its software turn\u2011time using Cursor\u2019s LLM\u2011assisted editing, we may see a wave of similar vertical integrations \u2014 aerospace, automotive, even biotech \u2014 buying up niche AI\u2011dev platforms to lock in speed advantages, reshaping how we think about tooling investments and the future of AI\u2011augmented engineering.",
       "url": "https://www.theverge.com/ai-artificial-intelligence/950571/spacex-is-officially-buying-cursor-for-60-billion",
