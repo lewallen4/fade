@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "GLM-5.2 Tops Open Weights Model Rankings",
+      "summary": "GLM-5.2, the newest open\u2011weight model from Zhipu AI, has taken the top spot on Artificial Analysis\u2019 Intelligence Index, pushing past Llama 3 70B and Mistral Large. The HN post linking to the analysis raked in 866 points, showing strong community interest.\n\nFor developers and founders, this means a state\u2011of\u2011the\u2011art model is now freely downloadable, fine\u2011tunnable, and deployable without paying API fees or worrying about usage caps. It lowers the barrier to building competitive AI products, lets you audit the weights for safety, and signals that the open\u2011source race is heating up just as the big labs start to restrict access.",
+      "url": "https://artificialanalysis.ai/articles/glm-5-2-is-the-new-leading-open-weights-model-on-the-artificial-analysis-intelligence-index",
+      "date": "2026-06-18"
+    },
+    {
       "title": "GLM-5.2 Tops Open Weights AI Ranking",
       "summary": "Zhipu AI released GLM-5.2 on June\u202f15,\u202f2026, a 5.2\u2011billion\u2011parameter bilingual model trained on 2.4\u202ftrillion tokens. It debuted at the top of the Artificial Analysis Intelligence Index with a score of 78.9, edging out Llama\u202f3\u202f70B (78.2) and Mistral Medium (77.6) and becoming the new leading open\u2011weights model on the benchmark.\n\nFor developers and founders, this means a high\u2011performing model that can be inspected, fine\u2011tuned, and run locally without vendor lock\u2011in\u2014critical for building trustworthy AI agents and meeting emerging AI\u2011audit requirements. The open\u2011weights release lowers the barrier to experiment with state\u2011of\u2011the\u2011art language capabilities while keeping data and model provenance under your own control.",
       "url": "https://artificialanalysis.ai/articles/glm-5-2-is-the-new-leading-open-weights-model-on-the-artificial-analysis-intelligence-index",
