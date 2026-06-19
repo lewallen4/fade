@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Amazon Workers Face Termination Over Data Center Limits",
+      "summary": "On June 18, 2026, a group of Amazon Web Services employees affiliated with the Amazon Employees for Climate Justice (AECJ) coalition reported that management had issued disciplinary notices \u2014 including threats of termination \u2014 to dozens of workers who publicly backed a moratorium on new data\u2011center construction in the Seattle area. The employees had signed an open letter urging Amazon to pause expansion until renewable\u2011energy commitments are met, citing the climate impact of the company\u2019s rapidly growing AI\u2011driven compute footprint. According to the Verge report, at least 12 employees received formal warnings, and several were told they could be fired if they continued to participate in the campaign.\n\nThis matters because the clash highlights a growing fault line in the AI boom: the pressure to scale compute infrastructure versus the environmental and social expectations of the tech workforce. For developers and founders, it signals that hiring and retaining talent may increasingly depend on how companies handle sustainability activism, and that public pushback could slow or redirect data\u2011center investments that underpin AI services. In short, the way Amazon handles this protest could become a bellwether for how the industry balances growth with accountability.",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/952180/amazon-seattle-data-center-moratorium-aecj-disciplinary-action",
+      "date": "2026-06-19"
+    },
+    {
       "title": "GLM-5.2 Tops Open Weights Model Rankings",
       "summary": "GLM-5.2, the newest open\u2011weight model from Zhipu AI, has taken the top spot on Artificial Analysis\u2019 Intelligence Index, pushing past Llama 3 70B and Mistral Large. The HN post linking to the analysis raked in 866 points, showing strong community interest.\n\nFor developers and founders, this means a state\u2011of\u2011the\u2011art model is now freely downloadable, fine\u2011tunnable, and deployable without paying API fees or worrying about usage caps. It lowers the barrier to building competitive AI products, lets you audit the weights for safety, and signals that the open\u2011source race is heating up just as the big labs start to restrict access.",
       "url": "https://artificialanalysis.ai/articles/glm-5-2-is-the-new-leading-open-weights-model-on-the-artificial-analysis-intelligence-index",
