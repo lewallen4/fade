@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "AgentWatch Adds Budget Guardrails for AI Agents",
+      "summary": "On June 28, 2026, a Show HN submission titled 'AgentWatch \u2013 Prevent runaway AI agents with runtime budget enforcement' gathered 6 points on Hacker News. The open\u2011source tool, hosted at agent-watch.dev, provides a lightweight wrapper that monitors LLM\u2011powered agents and enforces user-defined limits on token consumption, execution time, and API call counts, shutting down the agent when any budget is exceeded.\n\nFor developers and founders shipping LLM\u2011driven agents, unexpected token spikes can turn a promising prototype into a costly liability or, worse, cause the agent to behave unpredictably. AgentWatch gives them a programmable, low-overhead way to cap spend and runtime without rewriting their agent logic, turning a manual checklist into an enforced guardrail. As agent frameworks proliferate, having a trusted budget enforcer moves from nice-to-have to essential hygiene for reliable, cost-controlled AI products.",
+      "url": "https://agent-watch.dev/",
+      "date": "2026-06-28"
+    },
+    {
       "title": "Smart Model Routing Now Built Into Claude, Codex, Cursor",
       "summary": "Workweave released an open\u2011source router that plugs directly into Claude, Codex and Cursor, letting the editor decide on the fly which model to call for each snippet of code. The router, posted on Hacker News yesterday and already upvoted 187 times, inspects the prompt, estimates token cost and expected quality, then routes to the cheapest model that meets a user\u2011defined threshold. It works over the Model Context Protocol, so no extra wrapper is needed\u2014just install the package and your existing Claude/Codex/Cursor setup starts sending requests through the router.\n\nFor developers who juggle multiple LLMs to keep costs down while staying accurate, this removes the guesswork and the brittle glue code that usually lives in CI scripts or custom middleware. It also gives FADE\u2019s auditors a concrete point to inspect: you can now trace which model actually executed a given call, making hallucination or compliance checks far easier to automate. In short, it\u2019s a small piece of infrastructure that could shave months off the tedious work of model selection and make AI\u2011assisted coding both cheaper and more auditable.",
       "url": "https://github.com/workweave/router",
