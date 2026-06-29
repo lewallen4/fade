@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "AgentWatch Lets Developers Leash Runaway AI Agents",
+      "summary": "AgentWatch, showcased in a Show HN post that earned 7 points, is a runtime budget enforcement tool for AI agents. It lets developers define hard limits on token consumption, API call counts, compute time, or any custom metric, and then automatically throttles, pauses, or terminates agents that exceed those quotas. The project integrates as a middleware wrapper around popular agent frameworks such as LangChain, AutoGen, and Semantic Kernel, and provides real\u2011time dashboards and webhook alerts for budget breaches.\n\nThis matters because autonomous agents are increasingly used in production pipelines where uncontrolled loops can balloon cloud bills, trigger rate\u2011limit bans, or even cause safety incidents. By giving engineers a straightforward, enforceable budget layer, AgentWatch helps prevent costly runaway behavior and aligns agent deployment with emerging AI governance expectations \u2014 something founders and developers need to ship reliable, controllable agents without guessing at limits.",
+      "url": "https://agent-watch.dev/",
+      "date": "2026-06-29"
+    },
+    {
       "title": "AgentWatch Adds Budget Guardrails for AI Agents",
       "summary": "On June 28, 2026, a Show HN submission titled 'AgentWatch \u2013 Prevent runaway AI agents with runtime budget enforcement' gathered 6 points on Hacker News. The open\u2011source tool, hosted at agent-watch.dev, provides a lightweight wrapper that monitors LLM\u2011powered agents and enforces user-defined limits on token consumption, execution time, and API call counts, shutting down the agent when any budget is exceeded.\n\nFor developers and founders shipping LLM\u2011driven agents, unexpected token spikes can turn a promising prototype into a costly liability or, worse, cause the agent to behave unpredictably. AgentWatch gives them a programmable, low-overhead way to cap spend and runtime without rewriting their agent logic, turning a manual checklist into an enforced guardrail. As agent frameworks proliferate, having a trusted budget enforcer moves from nice-to-have to essential hygiene for reliable, cost-controlled AI products.",
       "url": "https://agent-watch.dev/",
