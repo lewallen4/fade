@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "ChatGPT Logs Used as Evidence in Wildfire Arson Trial",
+      "summary": "On June 28, 2026, prosecutors in the Palisades wildfire arson trial entered the defendant\u2019s ChatGPT conversation history as evidence. The logs showed the accused asking the model about accelerant mixes and ignition timing in the days before the fire. After hearing the evidence, the jury voted 10\u20112 in favor of the defense, forcing a mistrial. The judge declared the trial invalid and set a new date for later this summer.\n\nThis is a wake\u2011up call for anyone building or deploying language models: every prompt and response can become discoverable material in a legal proceeding. Developers should treat API logs as sensitive data, implement retention policies, and consider how model outputs might be interpreted out of context. For founders, it underscores the need for transparent usage policies and robust audit trails \u2014 otherwise a seemingly harmless chat could turn into courtroom evidence that sways a verdict.",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/958751/prosecutors-chatgpt-palisades-wildfire-arson-mistrial",
+      "date": "2026-06-30"
+    },
+    {
       "title": "AgentWatch Lets Developers Leash Runaway AI Agents",
       "summary": "AgentWatch, showcased in a Show HN post that earned 7 points, is a runtime budget enforcement tool for AI agents. It lets developers define hard limits on token consumption, API call counts, compute time, or any custom metric, and then automatically throttles, pauses, or terminates agents that exceed those quotas. The project integrates as a middleware wrapper around popular agent frameworks such as LangChain, AutoGen, and Semantic Kernel, and provides real\u2011time dashboards and webhook alerts for budget breaches.\n\nThis matters because autonomous agents are increasingly used in production pipelines where uncontrolled loops can balloon cloud bills, trigger rate\u2011limit bans, or even cause safety incidents. By giving engineers a straightforward, enforceable budget layer, AgentWatch helps prevent costly runaway behavior and aligns agent deployment with emerging AI governance expectations \u2014 something founders and developers need to ship reliable, controllable agents without guessing at limits.",
       "url": "https://agent-watch.dev/",
