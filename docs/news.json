@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Database Lessons Power Smarter AI Agents",
+      "summary": "The OneWill blog post details how its AI agent framework raided five decades of database research to borrow proven techniques. Engineers revisited seminal work from Jim Gray, Michael Stonebraker, and the System R team, implementing cost\u2011based query planning for selecting which tool an LLM should call, using write\u2011ahead logging to persist agent state across crashes, and applying two\u2011phase commit protocols to keep multi\u2011step reasoning atomic. In internal benchmarks, agents equipped with these mechanisms cut average latency by 30% and improved correct tool selection from 58% to 82% compared with a baseline that treats each step as an independent call.\n\nFor anyone building agents, the takeaway is straightforward: stop treating every LLM invocation as a black\u2011box gamble and start borrowing the reliability tricks that made databases work at scale. Founders can point to concrete performance numbers when pitching investors, while security\u2011conscious readers will see how transactional guarantees reduce hallucinations and state drift\u2014turning agents from flaky prototypes into dependable components.",
+      "url": "https://onewill.ai/blog/2026/stealing-50-years-of-database-ideas-for-ai-agents/",
+      "date": "2026-07-01"
+    },
+    {
       "title": "ChatGPT Logs Used as Evidence in Wildfire Arson Trial",
       "summary": "On June 28, 2026, prosecutors in the Palisades wildfire arson trial entered the defendant\u2019s ChatGPT conversation history as evidence. The logs showed the accused asking the model about accelerant mixes and ignition timing in the days before the fire. After hearing the evidence, the jury voted 10\u20112 in favor of the defense, forcing a mistrial. The judge declared the trial invalid and set a new date for later this summer.\n\nThis is a wake\u2011up call for anyone building or deploying language models: every prompt and response can become discoverable material in a legal proceeding. Developers should treat API logs as sensitive data, implement retention policies, and consider how model outputs might be interpreted out of context. For founders, it underscores the need for transparent usage policies and robust audit trails \u2014 otherwise a seemingly harmless chat could turn into courtroom evidence that sways a verdict.",
       "url": "https://www.theverge.com/ai-artificial-intelligence/958751/prosecutors-chatgpt-palisades-wildfire-arson-mistrial",
