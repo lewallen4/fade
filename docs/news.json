@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Mycelium Plugin Turns Agent Ideas into Market-Ready Code",
+      "summary": "On July\u202f3, haabe dropped Mycelium on Show\u202fHN, a GitHub repo that bills itself as an \u2018AI agent plugin guiding you from purpose to market.\u2019 The post earned the single point it currently shows on Hacker\u202fNews. The plugin gives developers three opinionated commands \u2014 purpose, plan, and market \u2014 that scaffold a clear objective, break it into actionable steps, and spit out a one\u2011page go\u2011to\u2011market brief, all designed to drop into a LangChain\u2011based agent written in Python.\n\nFor anyone building agents, the biggest trap is spending weeks on clever prompts only to realize nobody cares what the agent does. Mycelium forces the conversation early: define why the agent exists, map out how it will be used, and draft the pitch before writing a line of code. That shortcut can save developers and founders from building cool\u2011but\u2011useless demos and instead ship agents that have a clear path to users or customers.",
+      "url": "https://github.com/haabe/mycelium",
+      "date": "2026-07-04"
+    },
+    {
       "title": "OpenAI\u2019s 5% AI\u2011profit offer to Trump admin",
       "summary": "The Verge reports that OpenAI officials floated giving the Trump administration a 5\u202fpercent cut of future AI\u2011generated revenue as part of a lobbying push for favorable regulation. The discussions, which took place in mid\u20112026, involved OpenAI CEO Sam Altman and senior White House advisors, according to sources familiar with the talks. The proposal would earmark a slice of profits from upcoming foundation models and agent platforms for federal coffers in exchange for lighter oversight on safety testing and export controls.\n\nWhy should developers and founders care? It shows how the biggest AI players are willing to trade equity for policy access, a move that could tilt the playing field toward incumbents and make it harder for independent labs to compete on fair terms. If such deals become routine, expect more strings attached to funding, tighter coupling between AI development and government agendas, and a regulatory environment where compliance costs favor those who can write the biggest checks\u2014exactly the kind of dynamic that auditors like FADE need to watch when assessing agentic systems for bias, concentration risk, and undue influence.",
       "url": "https://www.theverge.com/ai-artificial-intelligence/960588/openai-government-5-percent-stake-trump",
