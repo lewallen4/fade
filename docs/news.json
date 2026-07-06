@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Live Map Visualizes Parallel Claude Code & Codex Agents",
+      "summary": "On July 6, 2026, HackerNews user Latand posted a Show HN for live\u2011log\u2011viewer\u2011next, an open\u2011source web tool that runs Anthropic\u2019s Claude Code and OpenAI\u2019s Codex agents side\u2011by\u2011side and streams their actions onto a live map. The map shows each agent\u2019s cursor position, file edits, and tool calls as colored nodes, updating in real time as the agents write code. A single command (`docker compose up`) launches two containers\u2014one for each agent\u2014while a lightweight Node.js front\u2011end subscribes to their WebSocket logs and renders overlaps, conflicts, and idle periods. The repo reports handling up to eight concurrent agents and logging roughly 12\u202f000 events per minute in a stress test.\n\nWhy this matters: as teams start to treat LLM coding assistants as collaborators, the biggest blind spot is seeing how their parallel edits interfere or duplicate work. Live\u2011log\u2011viewer\u2011next gives developers an immediate, visual audit trail that can be hooked into CI pipelines or compliance checks, exactly the kind of observability FADE looks for when evaluating agent safety. It also hints at the next tooling wave\u2014orchestration layers that make multi\u2011agent workflows transparent and controllable, a prerequisite for scaling AI\u2011generated code beyond solo experiments.",
+      "url": "https://github.com/Latand/live-log-viewer-next",
+      "date": "2026-07-06"
+    },
+    {
       "title": "Anthropic turns Claude toward drug discovery",
       "summary": "Anthropic told The Verge it is using its Claude AI models to assist in drug development, per an interview with CEO Dario Amodei on July 2, 2026. The effort is internal, with a small team of researchers feeding Claude molecular data to generate candidate compounds aimed at speeding up early\u2011stage discovery. No external partnership has been announced yet.\n\nThis matters to developers and founders because it shows frontier AI models moving beyond chat into high\u2011stakes scientific work, hinting at new AI\u2011driven biotech opportunities and the need for safety checks when AI designs molecules that could become medicines. It also signals a shift in how AI companies monetize their models, potentially opening a new revenue stream that could affect API pricing and model access.",
       "url": "https://www.theverge.com/ai-artificial-intelligence/961311/anthropic-claude-science-ai-drug-development",
