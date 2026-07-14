@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "X Launches Agent Interface for Developers",
+      "summary": "On July 11, 2026 X rolled out a public beta called the Agent API, a set of REST endpoints that let registered AI agents read timelines, post tweets, reply, and fetch user profiles without scraping. The interface lives at api.x.com/v2/agents, requires an OAuth 2.0 token scoped to agent:read and agent:write, and offers a rate limit of 500 requests per 15\u2011minute window per token. Developer Alex Lemire demonstrated it by pointing a simple agent at his own X feed, which fetched his last 20 tweets and posted a automated summary thread in under two seconds.\n\nFor anyone building AI\u2011powered tools, this removes the fragility and legal gray area of screen\u2011scraping X and gives a predictable, auditable way to drive real\u2011world actions from language models. It also means agents can now be woven into customer\u2011support workflows, research pipelines, or content\u2011moderation bots at scale, but it opens the door to coordinated spam or manipulation, so security teams will need to watch for anomalous agent tokens and enforce tight scope on what those keys can do.",
+      "url": "https://lemire.me/blog/2026/07/11/x-just-gave-us-an-interface-that-ai-agents-can-use-i-pointed-it-at-my-own-posts/",
+      "date": "2026-07-14"
+    },
+    {
       "title": "Skillscript launches sandboxed language for safe tool orchestration",
       "summary": "On July 13 2026, developer sshwarts pushed Skillscript to GitHub, a declarative, sandboxed language for orchestrating external tools. The project earned 16 points on HackerNews today and includes a TypeScript interpreter, a small standard library for filesystem and HTTP calls, and a policy engine that lets you whitelist which binaries or APIs a script may invoke.\n\nFor anyone building AI agents that call tools, the biggest risk is letting untrusted code run with the host's privileges. Skillscript lets you define the allowed toolset in a static file, so the interpreter can enforce limits before any code runs. That means you can ship LLM\u2011driven workflows without writing custom sandbox wrappers each time, and you can audit the policy like any other config.",
       "url": "https://github.com/sshwarts/skillscript",
