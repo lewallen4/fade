@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Agnost AI Turns Agent Chats into Actionable Feedback",
+      "summary": "Agnost AI, a Y Combinator S26 startup, launched today with a product that automatically pulls user feedback from conversations between humans and AI agents. The tool ingests chat transcripts, runs LLMs to tag confusion points, feature requests, and sentiment, and outputs a structured report that highlights where agents succeed or fail. The launch post on Hacker News notes early access for a handful of SaaS teams building customer\u2011support and copilot agents.\n\nFor anyone shipping AI agents, guessing what users think is a bottleneck; Agnost turns that guesswork into a quick, repeatable process, letting teams spot broken flows or missing capabilities before they become support tickets. In a world where agent observability is becoming as critical as logs and metrics, this kind of feedback layer tightens the loop between deployment and improvement, helping developers ship safer, more useful agents faster.",
+      "url": "https://agnost.ai",
+      "date": "2026-07-15"
+    },
+    {
       "title": "X Launches Agent Interface for Developers",
       "summary": "On July 11, 2026 X rolled out a public beta called the Agent API, a set of REST endpoints that let registered AI agents read timelines, post tweets, reply, and fetch user profiles without scraping. The interface lives at api.x.com/v2/agents, requires an OAuth 2.0 token scoped to agent:read and agent:write, and offers a rate limit of 500 requests per 15\u2011minute window per token. Developer Alex Lemire demonstrated it by pointing a simple agent at his own X feed, which fetched his last 20 tweets and posted a automated summary thread in under two seconds.\n\nFor anyone building AI\u2011powered tools, this removes the fragility and legal gray area of screen\u2011scraping X and gives a predictable, auditable way to drive real\u2011world actions from language models. It also means agents can now be woven into customer\u2011support workflows, research pipelines, or content\u2011moderation bots at scale, but it opens the door to coordinated spam or manipulation, so security teams will need to watch for anomalous agent tokens and enforce tight scope on what those keys can do.",
       "url": "https://lemire.me/blog/2026/07/11/x-just-gave-us-an-interface-that-ai-agents-can-use-i-pointed-it-at-my-own-posts/",
