@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "EU annoyed as Anthropic sends junior staffer",
+      "summary": "On July 15, 2026, the European Parliament\u2019s Committee on Civil Liberties held a hearing on AI safety and the upcoming AI Act. Anthropic\u2019s representative was Donny Greenberg, a junior policy associate, rather than a senior executive like CEO Dario Amodei or its head of policy. EU officials openly expressed frustration, noting that the staffer lacked the authority to answer detailed questions about Claude 3.5\u2019s alignment techniques, risk assessments, and compliance timelines, and accused the company of sending a token figure to avoid substantive scrutiny.\n\nThis matters to developers and founders because it signals that regulators are tightening the screws on AI labs and will not accept superficial engagement. If you\u2019re building or deploying AI systems, expect stricter accountability demands and a need for senior-level involvement in compliance discussions. The episode also underscores that safety and governance aren\u2019t just PR talking points\u2014they\u2019re becoming concrete legal requirements that will shape product roadmaps and funding priorities.",
+      "url": "https://www.politico.eu/article/anthropic-european-parliament-donny-greenberg-artificial-intelligence-ai/",
+      "date": "2026-07-17"
+    },
+    {
       "title": "Agnost AI Turns Agent Chats into Actionable Feedback",
       "summary": "Agnost AI, a Y Combinator S26 startup, launched today with a product that automatically pulls user feedback from conversations between humans and AI agents. The tool ingests chat transcripts, runs LLMs to tag confusion points, feature requests, and sentiment, and outputs a structured report that highlights where agents succeed or fail. The launch post on Hacker News notes early access for a handful of SaaS teams building customer\u2011support and copilot agents.\n\nFor anyone shipping AI agents, guessing what users think is a bottleneck; Agnost turns that guesswork into a quick, repeatable process, letting teams spot broken flows or missing capabilities before they become support tickets. In a world where agent observability is becoming as critical as logs and metrics, this kind of feedback layer tightens the loop between deployment and improvement, helping developers ship safer, more useful agents faster.",
       "url": "https://agnost.ai",
