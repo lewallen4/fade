@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Amazon Trims AGI Team, Cutting Roughly 150 Jobs",
+      "summary": "Amazon announced a reduction of roughly 150 positions in its Artificial General Intelligence unit, according to the Wall Street Journal. The cuts affect engineers working on foundational models and reasoning systems, part of a broader cost\u2011saving push after the company\u2019s AGI initiative failed to meet internal milestones. The WSJ cites an internal memo dated July 20, 2026, showing the layoffs span teams in Seattle, Austin, and remote roles.\n\nFor developers and founders, this signals that even big\u2011tech bets on AGI are facing reality checks; resources are being pulled back from speculative research to more immediate, revenue\u2011generating AI work. It also means talent may become available on the market, potentially boosting open\u2011source projects and startups looking for experienced AGI engineers.",
+      "url": "https://www.wsj.com/tech/ai/amazon-cuts-jobs-in-artificial-general-intelligence-unit-fb86e2ba",
+      "date": "2026-07-23"
+    },
+    {
       "title": "Superserve wraps AI agents in Firecracker microVMs",
       "summary": "Superserve launched today as a Show HN project that wraps each long\u2011running AI agent in its own Firecracker microVM. The platform boots a VM in ~125\u202fms with a ~5\u202fMiB memory footprint, gives each agent its own CPU and optional GPU passthrough, and lets developers snapshot and restore state between runs. By using AWS\u2019s Firecracker hypervisor \u2014 the same tech behind Lambda and Fargate \u2014 Superserve promises near\u2011bare\u2011metal performance while providing strong hardware\u2011level isolation.\n\nFor developers building autonomous agents that execute untrusted code or call external APIs, the usual Docker\u2011or\u2011VM approach adds latency and a larger attack surface. Superserve\u2019s lightweight sandbox cuts start\u2011up time to a tenth of a second and isolates memory, filesystem, and network at the CPU level, making it feasible to run hundreds of agents concurrently on a single box. In practice, that means safer, cheaper deployment of agent\u2011driven workflows \u2014 something any founder scaling AI\u2011powered services should watch.",
       "url": "https://www.superserve.ai/",
