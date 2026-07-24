@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "AI Firms Hide Billions in Off\u2011Balance\u2011Sheet Debt",
+      "summary": "Futurism\u2019s investigation, published July 23, 2026, found that several leading AI companies have moved billions of dollars of debt into special\u2011purpose vehicles and related\u2011party entities that do not appear on their consolidated financial statements. The report cites SEC filings showing OpenAI\u2019s subsidiary raised $1.8\u202fbn via a variable\u2011interest entity, Anthropic used a similar structure to conceal roughly $900\u202fm, and Cohere\u2019s offshore SPV holds about $650\u202fm in loans. Together, the hidden debt totals at least $3.3\u202fbn across the three firms, with the article estimating the industry\u2011wide figure to be north of $12\u202fbn.\n\nThis matters because off\u2011balance\u2011sheet borrowing obscures the true financial risk of AI startups that are already burning cash at record rates. For developers and founders evaluating partnerships, acquisitions, or investments, hidden leverage can suddenly surface as covenant breaches or downgrades, affecting the stability of the models and tools we rely on. It also signals a broader trend where AI\u2019s hype\u2011driven fundraising is masking fragile balance sheets, a red flag for anyone building on or betting against these platforms.",
+      "url": "https://futurism.com/artificial-intelligence/ai-companies-hide-debt-off-balance-sheet",
+      "date": "2026-07-24"
+    },
+    {
       "title": "Amazon Trims AGI Team, Cutting Roughly 150 Jobs",
       "summary": "Amazon announced a reduction of roughly 150 positions in its Artificial General Intelligence unit, according to the Wall Street Journal. The cuts affect engineers working on foundational models and reasoning systems, part of a broader cost\u2011saving push after the company\u2019s AGI initiative failed to meet internal milestones. The WSJ cites an internal memo dated July 20, 2026, showing the layoffs span teams in Seattle, Austin, and remote roles.\n\nFor developers and founders, this signals that even big\u2011tech bets on AGI are facing reality checks; resources are being pulled back from speculative research to more immediate, revenue\u2011generating AI work. It also means talent may become available on the market, potentially boosting open\u2011source projects and startups looking for experienced AGI engineers.",
       "url": "https://www.wsj.com/tech/ai/amazon-cuts-jobs-in-artificial-general-intelligence-unit-fb86e2ba",
