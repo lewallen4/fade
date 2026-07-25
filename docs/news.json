@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Opus 5 Claims Top Spot on AI Intelligence Leaderboard",
+      "summary": "Opus 5, a newly released large language model, displaced the previous leader to claim the #1 position on Artificial Analysis\u2019s Intelligence Leaderboard as of July 24, 2026, posting the highest aggregate score recorded on the benchmark to date. The model was evaluated across reasoning, coding, and knowledge tests, and its release sparked 357 upvotes on Hacker News.\n\nFor developers and founders, a new top\u2011tier model means better\u2011performing tools for code generation, debugging, and product prototyping without the latency or cost trade\u2011offs of older models. It also signals that the frontier is moving fast enough that today\u2019s state\u2011of\u2011the\u2011art can be surpassed in weeks, reminding teams to continuously evaluate which model actually serves their use case rather than locking into a single vendor.",
+      "url": "https://artificialanalysis.ai/models",
+      "date": "2026-07-25"
+    },
+    {
       "title": "AI Firms Hide Billions in Off\u2011Balance\u2011Sheet Debt",
       "summary": "Futurism\u2019s investigation, published July 23, 2026, found that several leading AI companies have moved billions of dollars of debt into special\u2011purpose vehicles and related\u2011party entities that do not appear on their consolidated financial statements. The report cites SEC filings showing OpenAI\u2019s subsidiary raised $1.8\u202fbn via a variable\u2011interest entity, Anthropic used a similar structure to conceal roughly $900\u202fm, and Cohere\u2019s offshore SPV holds about $650\u202fm in loans. Together, the hidden debt totals at least $3.3\u202fbn across the three firms, with the article estimating the industry\u2011wide figure to be north of $12\u202fbn.\n\nThis matters because off\u2011balance\u2011sheet borrowing obscures the true financial risk of AI startups that are already burning cash at record rates. For developers and founders evaluating partnerships, acquisitions, or investments, hidden leverage can suddenly surface as covenant breaches or downgrades, affecting the stability of the models and tools we rely on. It also signals a broader trend where AI\u2019s hype\u2011driven fundraising is masking fragile balance sheets, a red flag for anyone building on or betting against these platforms.",
       "url": "https://futurism.com/artificial-intelligence/ai-companies-hide-debt-off-balance-sheet",
