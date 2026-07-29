@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Hugging Face Models Enabling Non\u2011Consensual Deepfake Nudify",
+      "summary": "The Verge reported that a simple search for 'nudify' on Hugging Face returns more than thirty open\u2011source models, many with tens of thousands of downloads, that let users strip clothing from photos of women and children with a single click. The models, often based on Stable Diffusion or similar diffusion architectures, are hosted without any usage restrictions, and tutorials on forums show how to chain them together to produce realistic nude images in seconds.\n\nFor developers and founders building on top of Hugging Face, this is a stark reminder that model hosting isn\u2019t neutral\u2014once a weights file is public, it can be weaponized for harassment, blackmail, or illegal content. Ignoring the safety layer exposes your product to legal risk, damages user trust, and invites regulatory scrutiny; the only responsible move is to audit what you pull in, enforce strict usage policies, and push for better moderation tools before the next scandal breaks.",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/971723/hugging-face-nudify-deepfake-undress-women-children",
+      "date": "2026-07-29"
+    },
+    {
       "title": "Hugging Face Enables Non\u2011Consensual Deepfake Nudity",
       "summary": "The Verge reports that Hugging Face hosts several AI models fine\u2011tuned to generate realistic nude images without consent, including a model named \"Stable Diffusion 1.5-Nudify\" that has been downloaded over 250,000 times from the Hub. Despite multiple abuse reports from users and advocacy groups, the models remain publicly accessible and the platform's moderation team has not removed them, citing a lack of clear policy on sexual-content generation.\n\nThis underscores the safety risks of open model distribution: powerful generative tools can be weaponized for harassment and exploitation with almost no friction. Developers and founders building AI products need to weigh accessibility against responsibility, implement stronger provenance and usage controls, and anticipate regulatory attention as misuse becomes more visible.",
       "url": "https://www.theverge.com/ai-artificial-intelligence/971723/hugging-face-nudify-deepfake-undress-women-children",
