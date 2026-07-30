@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Tokenless cuts LLM bills with smart model switching",
+      "summary": "Tokenless, a YC S26 startup, launched a service that automatically routes each LLM request to the cheapest model that meets latency and quality requirements. The platform supports major providers like OpenAI\u2019s GPT-4o, Anthropic\u2019s Claude 3.5, and Meta\u2019s Llama 3, and early beta users reported inference costs dropping 30\u201150% compared to fixed\u2011model setups.\n\nFor developers and founders watching their AI spend, this removes the guesswork of manual model selection and reduces vendor lock\u2011in. By continuously optimizing cost without sacrificing performance, Tokenless lets teams ship AI features faster while keeping budgets predictable\u2014a practical edge in a market where LLM pricing can quickly spiral out of control.",
+      "url": "https://usetokenless.com/",
+      "date": "2026-07-30"
+    },
+    {
       "title": "Hugging Face Models Enabling Non\u2011Consensual Deepfake Nudify",
       "summary": "The Verge reported that a simple search for 'nudify' on Hugging Face returns more than thirty open\u2011source models, many with tens of thousands of downloads, that let users strip clothing from photos of women and children with a single click. The models, often based on Stable Diffusion or similar diffusion architectures, are hosted without any usage restrictions, and tutorials on forums show how to chain them together to produce realistic nude images in seconds.\n\nFor developers and founders building on top of Hugging Face, this is a stark reminder that model hosting isn\u2019t neutral\u2014once a weights file is public, it can be weaponized for harassment, blackmail, or illegal content. Ignoring the safety layer exposes your product to legal risk, damages user trust, and invites regulatory scrutiny; the only responsible move is to audit what you pull in, enforce strict usage policies, and push for better moderation tools before the next scandal breaks.",
       "url": "https://www.theverge.com/ai-artificial-intelligence/971723/hugging-face-nudify-deepfake-undress-women-children",
