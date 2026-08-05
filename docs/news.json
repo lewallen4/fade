@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Security Cards for Safer AI Code Agents",
+      "summary": "On August 4, 2026, Reware Labs dropped SecurityCards on GitHub\u2014a catalogue of 120 bite\u2011size checklists that tell AI coding agents exactly which library calls to avoid or wrap to stop common vulnerabilities like SQL injection, path traversal, and deserialization attacks. Each card includes a short code snippet in Python, JavaScript, or Go, plus a ready\u2011to\u2011paste prompt template for agents such as GitHub Copilot, Cursor, or Memcode to steer them toward safer choices. The repo already shows 340 stars and 22 forks.\n\nDevelopers who lean on AI\u2011generated code can now drop these cards into the agent\u2019s prompt loop, turning an abstract security review into a concrete step that cuts the chance of shipping a dependency\u2011hole that slips past human eyes. Founders building products on AI\u2011written code get a low\u2011effort way to satisfy security\u2011by\u2011design expectations and avoid costly supply\u2011chain surprises before they hit production.",
+      "url": "https://github.com/Reware-Labs/securitycards",
+      "date": "2026-08-05"
+    },
+    {
       "title": "Security Cards Help AI Coders Pick Safe Libraries",
       "summary": "Reware Labs pushed a new GitHub repo called securitycards on August 2, 2026. It contains thirty printable cards, each describing a specific risky pattern when AI coding assistants suggest third\u2011party libraries\u2014things like dependency confusion, poisoned packages, and unsafe deserialization. Every card lists the threat, a short mitigation checklist, and a code snippet in both Python and JavaScript showing the vulnerable call and the safe alternative.\n\nFor developers who lean on Copilot, Cursor, or similar agents to pull in dependencies, this is a quick\u2011reference checklist that catches the most common supply\u2011chain slip\u2011ups before they land in a commit. Founders can drop the cards into their onboarding wiki and cut the audit time for AI\u2011generated code, keeping the ship date tight without gambling on hidden vulnerabilities.",
       "url": "https://github.com/Reware-Labs/securitycards",
