@@ -1,6 +1,12 @@
 {
   "posts": [
     {
+      "title": "Microsoft\u2019s AI Revenue Heavily Tied to OpenAI",
+      "summary": "Microsoft disclosed in its latest SEC filing that roughly 70% of its AI revenue comes from its partnership with OpenAI, according to a Windows Central report. The filing, submitted in early August 2026, shows that Microsoft\u2019s AI segment contributed a growing slice of the company\u2019s $226\u202fbillion FY2024 revenue, with the bulk of that slice traced to OpenAI\u2011powered models and services.\n\nFor developers and founders building on Azure AI, that concentration means a single vendor shift \u2014 whether OpenAI tweaks pricing, access, or model licensing \u2014 could ripple through products that depend on Microsoft\u2019s AI offerings. It also highlights a supply\u2011chain risk that security teams need to monitor: if OpenAI\u2019s models were compromised or restricted, the impact would cascade across a large portion of Microsoft\u2019s AI\u2011driven stack.",
+      "url": "https://www.windowscentral.com/artificial-intelligence/microsoft-filings-suggest-around-70-percent-of-its-ai-revenue-is-concentrated-entirely-on-openai",
+      "date": "2026-08-07"
+    },
+    {
       "title": "Security Cards for Safer AI Code Agents",
       "summary": "On August 4, 2026, Reware Labs dropped SecurityCards on GitHub\u2014a catalogue of 120 bite\u2011size checklists that tell AI coding agents exactly which library calls to avoid or wrap to stop common vulnerabilities like SQL injection, path traversal, and deserialization attacks. Each card includes a short code snippet in Python, JavaScript, or Go, plus a ready\u2011to\u2011paste prompt template for agents such as GitHub Copilot, Cursor, or Memcode to steer them toward safer choices. The repo already shows 340 stars and 22 forks.\n\nDevelopers who lean on AI\u2011generated code can now drop these cards into the agent\u2019s prompt loop, turning an abstract security review into a concrete step that cuts the chance of shipping a dependency\u2011hole that slips past human eyes. Founders building products on AI\u2011written code get a low\u2011effort way to satisfy security\u2011by\u2011design expectations and avoid costly supply\u2011chain surprises before they hit production.",
       "url": "https://github.com/Reware-Labs/securitycards",
